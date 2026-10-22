@@ -8,6 +8,7 @@ import { getStudentForStaff, requireStaff, requireUser } from "@/lib/auth";
 import { getEditionForStaff } from "@/lib/guards";
 import { audit } from "@/lib/audit";
 import { ROLES } from "@/lib/constants";
+import { parseEuro } from "@/lib/quote";
 import type { ActionState } from "./students";
 
 const opt = z.string().trim().optional().transform((v) => (v ? v : null));
@@ -32,7 +33,10 @@ export async function saveCourseType(id: string | null, _: ActionState, form: Fo
   const user = await requireUser(ROLES.ADMIN, ROLES.TEACHER);
   const parsed = courseTypeSchema.safeParse(Object.fromEntries(form.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-  const data = { ...parsed.data, certificateEnabled: form.get("certificateEnabled") === "on" };
+  const prices = { packagePriceCents: parseEuro(form.get("packagePrice") as string), lessonPriceCents: parseEuro(form.get("lessonPrice") as string) };
+  for (const k of ["packagePrice", "lessonPrice"] as const)
+    if (String(form.get(k) ?? "").trim() && prices[`${k}Cents`] === null) return { error: "Prezzo non valido (usa ad es. 350 o 350,00)." };
+  const data = { ...parsed.data, ...prices, certificateEnabled: form.get("certificateEnabled") === "on" };
   if (id) {
     await db.courseType.update({ where: { id }, data });
   } else {

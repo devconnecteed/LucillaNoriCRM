@@ -21,6 +21,9 @@ export function ActionForm({ action, children, className, render }: {
   return (
     <form
       className={className}
+      // `action` garantisce l'invio come server action anche prima dell'idratazione
+      // (altrimenti il browser farebbe un GET con i dati nell'URL); dopo, onSubmit evita il reset del form.
+      action={dispatch}
       onSubmit={(e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);

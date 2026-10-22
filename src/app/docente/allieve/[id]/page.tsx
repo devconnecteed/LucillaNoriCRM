@@ -48,7 +48,7 @@ export default async function StudentDossier({ params, searchParams }: { params:
       <PageHeader
         title={`${student.firstName} ${student.lastName}`}
         subtitle={<span className="flex flex-wrap items-center gap-2">{student.email}{student.phone && ` · ${student.phone}`} {accessBadge}{student.isMinor && <Badge tone="amber">Minorenne</Badge>}</span>}
-        actions={<ButtonLink variant="secondary" href={`/docente/valutazioni?allieva=${id}`}>Assegna questionario</ButtonLink>}
+        actions={<><ButtonLink variant="secondary" href={`/docente/preventivi/nuovo?allieva=${id}`}>Preventivo</ButtonLink><ButtonLink variant="secondary" href={`/docente/valutazioni?allieva=${id}`}>Assegna questionario</ButtonLink></>}
       />
       {creata && <p className="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">Anagrafica creata. Ora puoi inviare l’invito e iscriverla a un corso.</p>}
 

@@ -11,7 +11,7 @@ export default async function Dashboard() {
   const user = await requireStaff();
   const enrollmentWhere = enrollmentWhereForStaff(user);
 
-  const [students, editions, pending, toReview, toCertify, upcoming] = await Promise.all([
+  const [students, editions, pending, toReview, toCertify, upcoming, quotes] = await Promise.all([
     db.student.count({ where: { ...studentScope(user), status: "ACTIVE" } }),
     db.courseEdition.findMany({ where: { ...editionScope(user), status: { in: ["PLANNED", "RUNNING"] } }, include: { courseType: true, lessons: true, _count: { select: { enrollments: true } } } }),
     db.assignment.findMany({
@@ -36,7 +36,12 @@ export default async function Dashboard() {
       orderBy: { date: "asc" },
       take: 5,
     }),
+    db.quote.findMany({
+      where: { ...(user.role === "ADMIN" ? {} : { teacherId: user.id }), OR: [{ status: "SENT" }, { status: "ACCEPTED", editionId: null }] },
+      orderBy: { updatedAt: "desc" },
+    }),
   ]);
+  const acceptedQuotes = quotes.filter((q) => q.status === "ACCEPTED");
 
   const closing = editions.filter((e) => e.lessons.length && e.lessons.every((l) => l.date && l.date < new Date()));
 
@@ -45,9 +50,16 @@ export default async function Dashboard() {
       <PageHeader title={`Buongiorno, ${user.name.split(" ")[0]}`} subtitle="Il riepilogo di oggi"
         actions={<><ButtonLink href="/docente/allieve/nuova">+ Nuova allieva</ButtonLink><ButtonLink variant="secondary" href="/docente/valutazioni">Assegna questionario</ButtonLink></>} />
 
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
+      {acceptedQuotes.length > 0 && (
+        <div className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900">
+          <b>{acceptedQuotes.length === 1 ? "1 preventivo accettato" : `${acceptedQuotes.length} preventivi accettati`}</b> da avviare:{" "}
+          {acceptedQuotes.map((q, i) => <span key={q.id}>{i > 0 && ", "}<Link className="underline" href={`/docente/preventivi/${q.id}`}>{q.prospectFirstName} {q.prospectLastName}</Link></span>)}
+        </div>
+      )}
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-6">
         <Stat label="Allieve attive" value={students} href="/docente/allieve" />
         <Stat label="Edizioni in corso" value={editions.length} href="/docente/corsi" />
+        <Stat label="Preventivi in attesa" value={quotes.length - acceptedQuotes.length} href="/docente/preventivi?stato=SENT" />
         <Stat label="Questionari pendenti" value={pending.length} />
         <Stat label="Da rivedere" value={toReview.length} href="/docente/valutazioni" />
         <Stat label="Attestati da emettere" value={toCertify.length} href="/docente/attestati" />

@@ -3,9 +3,10 @@ import type { CourseType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireStaff, editionScope } from "@/lib/auth";
 import { EDITION_STATUS_LABELS, MODE_LABELS } from "@/lib/constants";
+import { centsToInput, euro } from "@/lib/quote";
 import { createEdition, saveCourseType, setCourseTypeStatus } from "@/server/courses";
 import { ActionForm } from "@/components/action-form";
-import { Badge, Button, Card, Empty, Field, PageHeader, Table, Td, fmtDate, statusTone } from "@/components/ui";
+import { Badge, Button, ButtonLink, Card, Empty, Field, PageHeader, Table, Td, fmtDate, statusTone } from "@/components/ui";
 
 export const metadata = { title: "Corsi" };
 
@@ -21,6 +22,8 @@ function CourseTypeFields({ ct }: { ct?: CourseType }) {
           {Object.entries(MODE_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select>
       </Field>
+      <Field label="Prezzo pacchetto (€)" hint="Per il numero di lezioni indicato sopra."><input className="input" inputMode="decimal" name="packagePrice" defaultValue={centsToInput(ct?.packagePriceCents)} placeholder="es. 350,00" /></Field>
+      <Field label="Prezzo lezione singola (€)" hint="Usato per lezioni extra o pacchetti diversi."><input className="input" inputMode="decimal" name="lessonPrice" defaultValue={centsToInput(ct?.lessonPriceCents)} placeholder="es. 90,00" /></Field>
       <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" name="certificateEnabled" defaultChecked={ct?.certificateEnabled ?? true} /> Rilascia attestato di partecipazione</label>
       <Field label="Descrizione"><textarea className="input" name="description" defaultValue={ct?.description ?? ""} /></Field>
       <Field label="Obiettivi"><textarea className="input" name="objectives" defaultValue={ct?.objectives ?? ""} /></Field>
@@ -44,7 +47,8 @@ export default async function CoursesPage() {
 
   return (
     <>
-      <PageHeader title="Corsi" subtitle="Tipologie configurabili ed edizioni (percorsi individuali o di gruppo)" />
+      <PageHeader title="Corsi" subtitle="Tipologie configurabili ed edizioni (percorsi individuali o di gruppo)"
+        actions={<ButtonLink href="/docente/preventivi/nuovo">Crea preventivo</ButtonLink>} />
 
       <section className="mb-10">
         <h2 className="mb-3 font-serif text-xl text-ln-900">Edizioni e percorsi</h2>
@@ -95,6 +99,15 @@ export default async function CoursesPage() {
                 {t.status === "ARCHIVED" ? <Badge tone="red">Archiviata</Badge> : <Badge tone="green">Attiva</Badge>}
               </div>
               {t.objectives && <p className="mt-2 text-sm">{t.objectives}</p>}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-ln-50 px-3 py-2 text-sm">
+                <span>
+                  {t.packagePriceCents != null && <>Pacchetto <b>{euro(t.packagePriceCents)}</b></>}
+                  {t.packagePriceCents != null && t.lessonPriceCents != null && " · "}
+                  {t.lessonPriceCents != null && <>Lezione <b>{euro(t.lessonPriceCents)}</b></>}
+                  {t.packagePriceCents == null && t.lessonPriceCents == null && <span className="text-stone-500">Listino non impostato</span>}
+                </span>
+                {t.status === "ACTIVE" && <Link className="font-medium text-ln-700 underline" href={`/docente/preventivi/nuovo?corso=${t.id}`}>Preventivo →</Link>}
+              </div>
               <details className="mt-3">
                 <summary className="cursor-pointer text-sm text-ln-700">Modifica</summary>
                 <ActionForm action={saveCourseType.bind(null, t.id)} className="mt-3 space-y-3">

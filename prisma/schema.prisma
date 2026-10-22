@@ -27,6 +27,7 @@ model User {
   invites          Invite[]
   authoredVersions TemplateVersion[]
   auditLogs        AuditLog[]
+  quotes           Quote[]
 }
 
 model Invite {
@@ -73,6 +74,7 @@ model Student {
   enrollments  Enrollment[]
   consents     ConsentRecord[]
   teacherNotes TeacherNote[]
+  quotes       Quote[]
 }
 
 model TeacherNote {
@@ -107,11 +109,15 @@ model CourseType {
   program            String?
   mode               String          @default("INDIVIDUAL") // INDIVIDUAL | GROUP | BOTH
   certificateEnabled Boolean         @default(true)
+  // Listino per il preventivatore (centesimi di euro)
+  packagePriceCents  Int?
+  lessonPriceCents   Int?
   status             String          @default("ACTIVE") // ACTIVE | ARCHIVED
   createdAt          DateTime        @default(now())
 
   editions  CourseEdition[]
   templates QuestionnaireTemplate[]
+  quotes    Quote[]
 }
 
 model CourseEdition {
@@ -285,4 +291,44 @@ model AuditLog {
   entityId  String?
   data      Json?
   createdAt DateTime @default(now())
+}
+
+// Preventivo inviato a una potenziale allieva, accettabile tramite link monouso.
+// Importi in centesimi; i totali sono sempre ricalcolati lato server (src/lib/quote.ts).
+model Quote {
+  id               String      @id @default(cuid())
+  number           String      @unique
+  teacherId        String
+  teacher          User        @relation(fields: [teacherId], references: [id])
+  courseTypeId     String
+  courseType       CourseType  @relation(fields: [courseTypeId], references: [id])
+  studentId        String?
+  student          Student?    @relation(fields: [studentId], references: [id])
+  prospectFirstName String
+  prospectLastName String
+  prospectEmail    String
+  prospectPhone    String?
+  lessons          Int
+  lessonMinutes    Int         @default(60)
+  lines            Json // [{ label, qty, unitCents }]
+  discountPct      Float       @default(0)
+  vatRate          Float       @default(0)
+  subtotalCents    Int
+  discountCents    Int
+  vatCents         Int
+  totalCents       Int
+  notes            String?
+  validUntil       DateTime
+  status           String      @default("DRAFT") // DRAFT | SENT | ACCEPTED | DECLINED | CANCELLED
+  tokenHash        String?     @unique
+  sentAt           DateTime?
+  viewedAt         DateTime?
+  acceptedAt       DateTime?
+  acceptedName     String?
+  acceptedIp       String?
+  declinedAt       DateTime?
+  declineReason    String?
+  editionId        String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 }
