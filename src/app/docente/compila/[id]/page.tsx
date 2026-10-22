@@ -5,7 +5,6 @@ import { parseContent } from "@/lib/questionnaire/schema";
 import type { Answers } from "@/lib/questionnaire/types";
 import { openAssignment } from "@/server/assignments";
 import { QuestionnaireForm } from "@/components/questionnaire/questionnaire-form";
-import { PageHeader } from "@/components/ui";
 
 export const metadata = { title: "Scheda docente" };
 
@@ -20,9 +19,14 @@ export default async function TeacherFillPage({ params }: { params: Promise<{ id
     a = await getAssignmentForStaff(user, id);
   }
   return (
-    <>
-      <PageHeader eyebrow="Scheda della docente" title={a.version.template.title} subtitle={`${a.enrollment.student.firstName} ${a.enrollment.student.lastName} · ${a.enrollment.edition.title}${a.lesson ? ` · lezione ${a.lesson.number}` : ""}`} />
-      <QuestionnaireForm assignmentId={a.id} content={parseContent(a.version.content)} initialAnswers={(a.responses[0]?.answers ?? {}) as Answers} doneHref={`/docente/compilazioni/${a.id}`} stickyTop="top-14 lg:top-[72px]" />
-    </>
+    <QuestionnaireForm
+      assignmentId={a.id}
+      title={`${a.version.template.title} · ${a.enrollment.student.firstName} ${a.enrollment.student.lastName}`}
+      content={parseContent(a.version.content)}
+      initialAnswers={(a.responses[0]?.answers ?? {}) as Answers}
+      closeHref={`/docente/allieve/${a.enrollment.studentId}?tab=questionari`}
+      doneHref={`/docente/compilazioni/${a.id}`}
+      doneMessage="Scheda completata. Ora puoi rivederla, aggiungere un commento e pubblicarla all’allieva."
+    />
   );
 }

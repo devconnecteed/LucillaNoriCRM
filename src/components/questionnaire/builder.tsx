@@ -86,8 +86,8 @@ export function Builder({ versionId, version, initial, readOnly }: Props) {
       </div>
 
       {preview ? (
-        <div className="mx-auto w-full max-w-[400px] rounded-[2rem] border-8 border-wine-dark bg-canvas p-4 shadow-xl">
-          <QuestionnaireForm assignmentId="preview" content={content} initialAnswers={{}} doneHref="#" preview stickyTop="top-0" />
+        <div className="mx-auto w-full max-w-[400px] overflow-hidden rounded-[2.2rem] border-[10px] border-wine-dark bg-canvas shadow-xl">
+          <QuestionnaireForm assignmentId="preview" title="Anteprima" content={content} initialAnswers={{}} doneHref="#" preview />
         </div>
       ) : (
         <fieldset disabled={readOnly} className="space-y-6">

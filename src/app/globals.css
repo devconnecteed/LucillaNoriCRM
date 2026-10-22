@@ -99,3 +99,30 @@ textarea.input {
     animation: none;
   }
 }
+
+/* Compilazione questionari "come un'app": transizioni tra domande */
+@keyframes step-in-next {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes step-in-prev {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pop-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes shake {
+  0%, 100% { transform: none; }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.step-in-next { animation: step-in-next 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.step-in-prev { animation: step-in-prev 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.pop-in { animation: pop-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.shake { animation: shake 0.3s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .step-in-next, .step-in-prev, .pop-in, .shake { animation: none; }
+}

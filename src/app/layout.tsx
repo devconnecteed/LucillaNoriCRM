@@ -8,9 +8,18 @@ const garamond = EB_Garamond({ variable: "--font-garamond", subsets: ["latin"] }
 export const metadata: Metadata = {
   title: { default: "LN Studio", template: "%s · LN Studio" },
   description: "Area riservata corsi di portamento",
+  applicationName: "LN Studio",
+  // Aggiunta alla schermata Home su iOS: si apre a tutto schermo come un'app
+  appleWebApp: { capable: true, title: "LN Studio", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#542033" };
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover", // contenuti fino ai bordi; i margini sicuri sono gestiti con env(safe-area-inset-*)
+  themeColor: "#542033",
+};
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
