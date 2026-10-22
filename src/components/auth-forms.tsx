@@ -16,7 +16,7 @@ export function LoginForm() {
         <span className="label">Password</span>
         <input className="input" name="password" type="password" autoComplete="current-password" required />
       </label>
-      {state?.error && <p role="alert" className="text-sm text-red-700">{state.error}</p>}
+      {state?.error && <p role="alert" className="text-sm text-[#a4434a]">{state.error}</p>}
       <Button className="w-full" disabled={pending}>{pending ? "Accesso…" : "Accedi"}</Button>
     </form>
   );
@@ -30,13 +30,13 @@ export function InviteForm({ token }: { token: string }) {
       <label className="block">
         <span className="label">Scegli una password</span>
         <input className="input" name="password" type="password" autoComplete="new-password" minLength={10} required />
-        <span className="mt-1 block text-xs text-stone-500">Almeno 10 caratteri, con lettere e numeri.</span>
+        <span className="mt-1 block text-xs text-muted">Almeno 10 caratteri, con lettere e numeri.</span>
       </label>
       <label className="block">
         <span className="label">Ripeti la password</span>
         <input className="input" name="confirm" type="password" autoComplete="new-password" required />
       </label>
-      {state?.error && <p role="alert" className="text-sm text-red-700">{state.error}</p>}
+      {state?.error && <p role="alert" className="text-sm text-[#a4434a]">{state.error}</p>}
       <Button className="w-full" disabled={pending}>{pending ? "Attivazione…" : "Attiva il mio accesso"}</Button>
     </form>
   );

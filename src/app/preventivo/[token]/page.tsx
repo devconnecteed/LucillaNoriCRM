@@ -15,11 +15,16 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
   if (q && open && !q.viewedAt) await db.quote.update({ where: { id: q.id }, data: { viewedAt: new Date() } });
 
   return (
-    <main className="min-h-dvh bg-gradient-to-b from-ln-100 to-ivory px-4 py-8">
-      <div className="mx-auto max-w-3xl space-y-6">
+    <main className="min-h-dvh bg-canvas">
+      <div className="h-2 bg-wine-dark" aria-hidden="true" />
+      <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
         {q && open ? (
           <>
-            <p className="text-center text-sm text-stone-600">Ciao {q.prospectFirstName}, ecco il preventivo che ti ha preparato {q.teacher.name}.</p>
+            <div className="text-center">
+              <div className="eyebrow">La tua proposta su misura</div>
+              <h1 className="font-serif text-[34px] leading-tight text-wine-dark">Ciao {q.prospectFirstName},</h1>
+              <p className="mt-1 text-[13px] text-muted">ecco il preventivo che ti ha preparato {q.teacher.name}.</p>
+            </div>
             <QuoteDocument quote={q} teacherName={q.teacher.name} />
             <QuoteResponse token={token} firstName={q.prospectFirstName} teacherName={q.teacher.name} />
           </>
@@ -28,19 +33,19 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ to
             <div className="mb-6"><Logo /></div>
             {q.status === "ACCEPTED" ? (
               <>
-                <h1 className="font-serif text-2xl text-ln-900">Grazie {q.prospectFirstName}!</h1>
-                <p className="mt-2 text-sm text-stone-700">
+                <h1 className="font-serif text-[30px] text-wine-dark">Grazie {q.prospectFirstName}!</h1>
+                <p className="mt-2 text-sm text-[#59494a]">
                   Hai accettato il preventivo {q.number} il {fmtDate(q.acceptedAt)}. {q.teacher.name} ti contatterà per fissare le lezioni e ti invierà l’accesso alla tua area riservata.
                 </p>
               </>
             ) : (
-              <p className="text-sm text-stone-700">Hai indicato di non essere interessata a questo preventivo. Se cambi idea scrivi pure a {q.teacher.name}.</p>
+              <p className="text-sm text-[#59494a]">Hai indicato di non essere interessata a questo preventivo. Se cambi idea scrivi pure a {q.teacher.name}.</p>
             )}
           </Card>
         ) : (
           <Card className="mx-auto max-w-md p-8 text-center">
             <div className="mb-6"><Logo /></div>
-            <p className="text-sm text-stone-700">
+            <p className="text-sm text-[#59494a]">
               {q && quoteEffectiveStatus(q) === "EXPIRED"
                 ? "Questo preventivo è scaduto. Scrivi alla tua insegnante per riceverne uno aggiornato."
                 : "Questo link non è più attivo: il preventivo potrebbe essere già stato gestito, aggiornato con un nuovo invio o annullato."}

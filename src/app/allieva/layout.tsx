@@ -1,22 +1,28 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { logout } from "@/app/auth-actions";
-import { Logo } from "@/components/ui";
+import { Icon } from "@/components/icons";
+import { Initials, Logo } from "@/components/ui";
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser("STUDENT");
   return (
     <div className="min-h-dvh">
-      <header className="border-b border-ln-100 bg-white">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <Link href="/allieva" aria-label="Home"><Logo small /></Link>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="hidden text-stone-600 sm:inline">{user.name}</span>
-            <form action={logout}><button className="text-ln-700 underline">Esci</button></form>
+      <header className="sticky top-0 z-20 border-b border-line bg-paper/90 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
+          <Link href="/allieva" aria-label="La mia area"><Logo small /></Link>
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs text-muted sm:inline">{user.name}</span>
+            <Initials name={user.name} />
+            <form action={logout}>
+              <button aria-label="Esci" title="Esci" className="grid h-9 w-9 place-items-center rounded-lg text-muted hover:bg-blush hover:text-wine">
+                <Icon name="logout" className="h-4 w-4" />
+              </button>
+            </form>
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-4 py-6">{children}</main>
+      <main className="view-in mx-auto max-w-3xl px-4 pb-16 pt-6">{children}</main>
     </div>
   );
 }

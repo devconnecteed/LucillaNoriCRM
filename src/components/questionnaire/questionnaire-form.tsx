@@ -16,10 +16,12 @@ type Props = {
   doneHref: string;
   /** Anteprima del builder: nessun salvataggio. */
   preview?: boolean;
+  /** Classe "top-*" per la barra di avanzamento, sotto l'eventuale testata fissa della pagina. */
+  stickyTop?: string;
 };
 
 /** Form guidato a sezioni (spec §7): progress bar, avanti/indietro, bozza, riepilogo e conferma. */
-export function QuestionnaireForm({ assignmentId, content, initialAnswers, doneHref, preview }: Props) {
+export function QuestionnaireForm({ assignmentId, content, initialAnswers, doneHref, preview, stickyTop = "top-16" }: Props) {
   const router = useRouter();
   const [answers, setAnswers] = useState<Answers>(initialAnswers);
   const [step, setStep] = useState(0); // 0..sections.length (ultimo = riepilogo)
@@ -86,8 +88,8 @@ export function QuestionnaireForm({ assignmentId, content, initialAnswers, doneH
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="sticky top-0 z-10 -mx-4 mb-4 bg-ivory/95 px-4 py-3 backdrop-blur">
-        <div className="mb-1 flex justify-between text-xs text-stone-600">
+      <div className={cx("sticky z-10 -mx-4 mb-4 bg-canvas/95 px-4 py-3 backdrop-blur", stickyTop)}>
+        <div className="mb-1 flex justify-between text-xs text-muted">
           <span>{isSummary ? "Riepilogo" : `Sezione ${step + 1} di ${sections.length}`}</span>
           <span>{answeredCount}/{answerable.length} risposte</span>
         </div>
@@ -96,25 +98,25 @@ export function QuestionnaireForm({ assignmentId, content, initialAnswers, doneH
         </div>
       </div>
 
-      {step === 0 && content.intro && <p className="mb-4 rounded-xl bg-ln-50 p-4 text-sm text-ln-900">{content.intro}</p>}
+      {step === 0 && content.intro && <p className="mb-4 rounded-xl bg-ln-50 p-4 text-sm text-wine-dark">{content.intro}</p>}
 
       {!isSummary && section && (
         <Card className="space-y-6">
           <div>
-            <h2 className="font-serif text-xl text-ln-900">{section.title}</h2>
-            {section.description && <p className="mt-1 text-sm text-stone-600">{section.description}</p>}
+            <h2 className="font-serif text-[24px] text-wine-dark">{section.title}</h2>
+            {section.description && <p className="mt-1 text-sm text-muted">{section.description}</p>}
           </div>
           {section.items.map((item) => {
             const invalid = missing.has(item.id);
             return (
-              <fieldset key={item.id} className={cx("space-y-2", invalid && "rounded-xl bg-red-50 p-3 ring-1 ring-red-200")}>
-                <legend className={cx("mb-2 font-medium", item.type === "info" ? "text-ln-800" : "text-ink")}>
+              <fieldset key={item.id} className={cx("space-y-2", invalid && "rounded-xl bg-[#fbeaec] p-3 ring-1 ring-[#f3d7da]")}>
+                <legend className={cx("mb-2 font-medium", item.type === "info" ? "text-wine" : "text-ink")}>
                   {item.label}
                   {item.required && item.type !== "info" && <span className="text-ln-600" aria-label="obbligatoria"> *</span>}
                 </legend>
-                {item.help && <p className="text-sm text-stone-600">{item.help}</p>}
+                {item.help && <p className="text-sm text-muted">{item.help}</p>}
                 <ItemInput item={item} value={answers[item.id]} onChange={(v) => set(item.id, v)} invalid={invalid} />
-                {invalid && <p className="text-xs text-red-700">Risposta obbligatoria.</p>}
+                {invalid && <p className="text-xs text-[#a4434a]">Risposta obbligatoria.</p>}
               </fieldset>
             );
           })}
@@ -124,31 +126,31 @@ export function QuestionnaireForm({ assignmentId, content, initialAnswers, doneH
       {isSummary && (
         <Card className="space-y-6">
           <div>
-            <h2 className="font-serif text-xl text-ln-900">Controlla e invia</h2>
-            <p className="mt-1 text-sm text-stone-600">Dopo l’invio potrai modificare le risposte solo se la tua insegnante riapre il questionario.</p>
+            <h2 className="font-serif text-[24px] text-wine-dark">Controlla e invia</h2>
+            <p className="mt-1 text-sm text-muted">Dopo l’invio potrai modificare le risposte solo se la tua insegnante riapre il questionario.</p>
           </div>
           {sections.map((s, idx) => (
             <div key={s.id}>
               <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-medium text-ln-800">{s.title}</h3>
-                <button type="button" className="text-sm text-ln-700 underline" onClick={() => setStep(idx)}>Modifica</button>
+                <h3 className="font-medium text-wine">{s.title}</h3>
+                <button type="button" className="text-sm text-wine underline" onClick={() => setStep(idx)}>Modifica</button>
               </div>
               <dl className="space-y-2 text-sm">
                 {s.items.filter((i) => i.type !== "info").map((i) => (
-                  <div key={i.id} className="rounded-lg bg-stone-50 p-2">
-                    <dt className="text-stone-600">{i.label}</dt>
+                  <div key={i.id} className="rounded-lg bg-[#faf8f7] p-2">
+                    <dt className="text-muted">{i.label}</dt>
                     <dd className="font-medium"><AnswerDisplay item={i} value={answers[i.id]} /></dd>
                   </div>
                 ))}
               </dl>
             </div>
           ))}
-          {content.outro && <p className="rounded-xl bg-ln-50 p-4 text-sm text-ln-900">{content.outro}</p>}
+          {content.outro && <p className="rounded-xl bg-ln-50 p-4 text-sm text-wine-dark">{content.outro}</p>}
         </Card>
       )}
 
       {msg && (
-        <p role={msg.type === "error" ? "alert" : "status"} className={cx("mt-4 text-sm", msg.type === "error" ? "text-red-700" : "text-emerald-700")}>
+        <p role={msg.type === "error" ? "alert" : "status"} className={cx("mt-4 text-sm", msg.type === "error" ? "text-[#a4434a]" : "text-ok")}>
           {msg.text}
         </p>
       )}

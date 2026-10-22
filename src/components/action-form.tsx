@@ -41,11 +41,11 @@ export function ActionForm({ action, children, className, render }: {
 export function FormMessage({ state }: { state: ActionState }) {
   if (!state?.error && !state?.ok) return null;
   return (
-    <div role={state.error ? "alert" : "status"} className={cx("mt-3 text-sm", state.error ? "text-red-700" : "text-emerald-700")}>
+    <div role={state.error ? "alert" : "status"} className={cx("mt-3 text-sm", state.error ? "text-[#a4434a]" : "text-ok")}>
       {state.error ?? state.ok}
       {state.link && (
-        <div className="mt-2 break-all rounded-lg bg-stone-50 p-2 text-xs text-stone-700">
-          Link (visibile solo in sviluppo): <a className="text-ln-700 underline" href={state.link}>{state.link}</a>
+        <div className="mt-2 break-all rounded-lg bg-[#faf8f7] p-2 text-xs text-[#59494a]">
+          Link (visibile solo in sviluppo): <a className="font-semibold text-wine underline" href={state.link}>{state.link}</a>
         </div>
       )}
     </div>

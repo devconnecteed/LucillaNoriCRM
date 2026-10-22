@@ -1,136 +1,87 @@
 import Link from "next/link";
-import type { CourseType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireStaff, editionScope } from "@/lib/auth";
-import { EDITION_STATUS_LABELS, MODE_LABELS } from "@/lib/constants";
-import { centsToInput, euro } from "@/lib/quote";
-import { createEdition, saveCourseType, setCourseTypeStatus } from "@/server/courses";
-import { ActionForm } from "@/components/action-form";
-import { Badge, Button, ButtonLink, Card, Empty, Field, PageHeader, Table, Td, fmtDate, statusTone } from "@/components/ui";
+import { EDITION_STATUS_LABELS } from "@/lib/constants";
+import { euro } from "@/lib/quote";
+import { Icon, type IconName } from "@/components/icons";
+import { Badge, ButtonLink, Empty, PageHeader, SectionHead, Table, Td, fmtDate, statusTone } from "@/components/ui";
 
-export const metadata = { title: "Corsi" };
+export const metadata = { title: "Percorsi e corsi" };
 
-function CourseTypeFields({ ct }: { ct?: CourseType }) {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <Field label="Titolo *"><input className="input" name="title" defaultValue={ct?.title} required /></Field>
-      <Field label="Categoria"><input className="input" name="category" defaultValue={ct?.category ?? ""} /></Field>
-      <Field label="N. lezioni"><input className="input" type="number" min={0} name="durationLessons" defaultValue={ct?.durationLessons ?? ""} /></Field>
-      <Field label="Ore totali"><input className="input" type="number" min={0} step={0.5} name="durationHours" defaultValue={ct?.durationHours ?? ""} /></Field>
-      <Field label="Modalità">
-        <select className="input" name="mode" defaultValue={ct?.mode ?? "BOTH"}>
-          {Object.entries(MODE_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-        </select>
-      </Field>
-      <Field label="Prezzo pacchetto (€)" hint="Per il numero di lezioni indicato sopra."><input className="input" inputMode="decimal" name="packagePrice" defaultValue={centsToInput(ct?.packagePriceCents)} placeholder="es. 350,00" /></Field>
-      <Field label="Prezzo lezione singola (€)" hint="Usato per lezioni extra o pacchetti diversi."><input className="input" inputMode="decimal" name="lessonPrice" defaultValue={centsToInput(ct?.lessonPriceCents)} placeholder="es. 90,00" /></Field>
-      <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" name="certificateEnabled" defaultChecked={ct?.certificateEnabled ?? true} /> Rilascia attestato di partecipazione</label>
-      <Field label="Descrizione"><textarea className="input" name="description" defaultValue={ct?.description ?? ""} /></Field>
-      <Field label="Obiettivi"><textarea className="input" name="objectives" defaultValue={ct?.objectives ?? ""} /></Field>
-      <Field label="Programma"><textarea className="input" name="program" defaultValue={ct?.program ?? ""} /></Field>
-      <Field label="Prerequisiti"><textarea className="input" name="prerequisites" defaultValue={ct?.prerequisites ?? ""} /></Field>
-    </div>
-  );
-}
+const COURSE_ICONS: IconName[] = ["book", "award", "users", "sparkle"];
 
 export default async function CoursesPage() {
   const user = await requireStaff();
   const [types, editions] = await Promise.all([
-    db.courseType.findMany({ orderBy: [{ status: "asc" }, { title: "asc" }], include: { _count: { select: { editions: true } } } }),
+    db.courseType.findMany({
+      orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+      include: { editions: { include: { _count: { select: { enrollments: { where: { status: { in: ["NOT_STARTED", "IN_PROGRESS"] } } } } } } } },
+    }),
     db.courseEdition.findMany({
       where: editionScope(user),
-      include: { courseType: true, teacher: true, lessons: true, _count: { select: { enrollments: true } } },
-      orderBy: { createdAt: "desc" },
+      include: { courseType: true, lessons: true, _count: { select: { enrollments: true } } },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     }),
   ]);
-  const activeTypes = types.filter((t) => t.status === "ACTIVE");
+  const now = new Date();
 
   return (
     <>
-      <PageHeader title="Corsi" subtitle="Tipologie configurabili ed edizioni (percorsi individuali o di gruppo)"
-        actions={<ButtonLink href="/docente/preventivi/nuovo">Crea preventivo</ButtonLink>} />
+      <PageHeader eyebrow="Catalogo della scuola" title="Percorsi su misura"
+        subtitle="Le tipologie definiscono il metodo; le edizioni gestiscono date, durata, iscrizioni e presenze."
+        actions={<>
+          <ButtonLink variant="secondary" icon="file" href="/docente/preventivi/nuovo">Crea preventivo</ButtonLink>
+          <ButtonLink icon="plus" href="/docente/corsi/tipologie/nuova">Crea un corso</ButtonLink>
+        </>} />
 
-      <section className="mb-10">
-        <h2 className="mb-3 font-serif text-xl text-ln-900">Edizioni e percorsi</h2>
-        {editions.length ? (
-          <Table head={["Edizione", "Tipologia", "Docente", "Inizio", "Lezioni", "Iscritte", "Stato"]}>
-            {editions.map((e) => (
-              <tr key={e.id} className="hover:bg-ln-50/50">
-                <Td><Link className="font-medium text-ln-800 hover:underline" href={`/docente/corsi/${e.id}`}>{e.title}</Link></Td>
+      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+        {types.map((t, i) => {
+          const students = t.editions.reduce((n, e) => n + e._count.enrollments, 0);
+          const archived = t.status === "ARCHIVED";
+          return (
+            <article key={t.id} className={`flex flex-col rounded-xl border border-line bg-white p-6 shadow-soft transition hover:-translate-y-0.5 hover:border-[#dcc0c5] ${archived ? "opacity-60" : ""}`}>
+              <div className="mb-[18px] flex items-center justify-between">
+                <div className="grid h-[46px] w-[46px] place-items-center rounded-[10px] bg-[#f6e8e8] text-wine"><Icon name={COURSE_ICONS[i % COURSE_ICONS.length]} /></div>
+                {archived ? <Badge tone="red">Archiviato</Badge> : <Badge tone="green">Attivo</Badge>}
+              </div>
+              <h2 className="mb-2.5 font-serif text-[24px] leading-tight text-wine-dark">{t.title}</h2>
+              <p className="min-h-11 flex-1 text-[13px] leading-relaxed text-muted">{t.description || t.objectives || "—"}</p>
+              <div className="mt-5 flex justify-between border-t border-line pt-4 text-xs text-[#746765]">
+                <div><b className="block font-serif text-[19px] font-normal text-wine">{t.durationLessons ?? "—"}</b>Lezioni standard</div>
+                <div className="text-center"><b className="block font-serif text-[19px] font-normal text-wine">{t.packagePriceCents != null ? euro(t.packagePriceCents) : "—"}</b>Pacchetto</div>
+                <div className="text-right"><b className="block font-serif text-[19px] font-normal text-wine">{students}</b>Allieve</div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <ButtonLink size="sm" variant="secondary" href={`/docente/corsi/tipologie/${t.id}`}>Configura percorso →</ButtonLink>
+                {!archived && <ButtonLink size="sm" variant="ghost" href={`/docente/preventivi/nuovo?corso=${t.id}`}>Preventivo</ButtonLink>}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <SectionHead title="Edizioni e iscrizioni" action={<Link href="/docente/corsi/edizioni/nuova" className="text-[13px] font-semibold text-wine">+ Nuova edizione</Link>} />
+      {editions.length ? (
+        <Table head={["Edizione", "Tipologia", "Avvio", "Lezioni", "Allieve", "Stato", ""]}>
+          {editions.map((e) => {
+            const held = e.lessons.filter((l) => l.date && l.date < now).length;
+            return (
+              <tr key={e.id}>
+                <Td>
+                  <Link href={`/docente/corsi/${e.id}`} className="font-bold hover:text-wine">{e.title}</Link>
+                  <span className="block text-xs text-muted">{e._count.enrollments > 1 ? "Gruppo" : "Individuale"}</span>
+                </Td>
                 <Td>{e.courseType.title}</Td>
-                <Td>{e.teacher.name}</Td>
-                <Td>{fmtDate(e.startDate)}</Td>
-                <Td>{e.lessons.length}</Td>
+                <Td>{fmtDate(e.startDate ?? e.lessons.map((l) => l.date).filter(Boolean).sort((a, b) => +a! - +b!)[0])}</Td>
+                <Td>{held} / {e.lessons.length}</Td>
                 <Td>{e._count.enrollments}</Td>
                 <Td><Badge tone={statusTone(e.status)}>{EDITION_STATUS_LABELS[e.status]}</Badge></Td>
+                <Td className="text-right"><ButtonLink size="sm" variant="secondary" href={`/docente/corsi/${e.id}`}>Apri →</ButtonLink></Td>
               </tr>
-            ))}
-          </Table>
-        ) : <Empty>Nessuna edizione: creane una qui sotto.</Empty>}
-
-        <Card className="mt-4">
-          <h3 className="mb-3 font-medium text-ln-900">Nuova edizione</h3>
-          <ActionForm action={createEdition} className="grid gap-3 sm:grid-cols-3">
-            <Field label="Tipologia *">
-              <select className="input" name="courseTypeId" required>
-                {activeTypes.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
-              </select>
-            </Field>
-            <Field label="Titolo" hint="Es. “Sposa – Maria R. – giugno 2027”. Vuoto = nome tipologia."><input className="input" name="title" /></Field>
-            <Field label="Data prima lezione" hint="Le lezioni successive vengono proposte a cadenza settimanale."><input className="input" type="date" name="startDate" /></Field>
-            <Field label="N. lezioni" hint="Vuoto = da tipologia."><input className="input" type="number" min={0} max={50} name="lessons" /></Field>
-            <Field label="Durata lezione (min)"><input className="input" type="number" min={15} name="durationMin" defaultValue={60} /></Field>
-            <Field label="Frequenza minima per attestato (%)"><input className="input" type="number" min={0} max={100} name="minAttendancePct" defaultValue={80} /></Field>
-            <div className="sm:col-span-3"><Button>Crea edizione</Button></div>
-          </ActionForm>
-        </Card>
-      </section>
-
-      <section>
-        <h2 className="mb-3 font-serif text-xl text-ln-900">Tipologie di corso</h2>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {types.map((t) => (
-            <Card key={t.id} className={t.status === "ARCHIVED" ? "opacity-60" : ""}>
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h3 className="font-serif text-lg text-ln-900">{t.title}</h3>
-                  <p className="text-sm text-stone-600">{MODE_LABELS[t.mode]} · {t.durationLessons ?? "?"} lezioni · {t.durationHours ?? "?"} ore · {t._count.editions} edizioni</p>
-                </div>
-                {t.status === "ARCHIVED" ? <Badge tone="red">Archiviata</Badge> : <Badge tone="green">Attiva</Badge>}
-              </div>
-              {t.objectives && <p className="mt-2 text-sm">{t.objectives}</p>}
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-ln-50 px-3 py-2 text-sm">
-                <span>
-                  {t.packagePriceCents != null && <>Pacchetto <b>{euro(t.packagePriceCents)}</b></>}
-                  {t.packagePriceCents != null && t.lessonPriceCents != null && " · "}
-                  {t.lessonPriceCents != null && <>Lezione <b>{euro(t.lessonPriceCents)}</b></>}
-                  {t.packagePriceCents == null && t.lessonPriceCents == null && <span className="text-stone-500">Listino non impostato</span>}
-                </span>
-                {t.status === "ACTIVE" && <Link className="font-medium text-ln-700 underline" href={`/docente/preventivi/nuovo?corso=${t.id}`}>Preventivo →</Link>}
-              </div>
-              <details className="mt-3">
-                <summary className="cursor-pointer text-sm text-ln-700">Modifica</summary>
-                <ActionForm action={saveCourseType.bind(null, t.id)} className="mt-3 space-y-3">
-                  <CourseTypeFields ct={t} />
-                  <Button>Salva</Button>
-                </ActionForm>
-                <form action={setCourseTypeStatus.bind(null, t.id, t.status === "ARCHIVED" ? "ACTIVE" : "ARCHIVED")} className="mt-2">
-                  <Button variant="ghost">{t.status === "ARCHIVED" ? "Riattiva" : "Archivia"}</Button>
-                </form>
-              </details>
-            </Card>
-          ))}
-        </div>
-        <Card className="mt-4">
-          <details>
-            <summary className="cursor-pointer font-medium text-ln-900">+ Nuova tipologia di corso</summary>
-            <ActionForm action={saveCourseType.bind(null, null)} className="mt-3 space-y-3">
-              <CourseTypeFields />
-              <Button>Crea tipologia</Button>
-            </ActionForm>
-          </details>
-        </Card>
-      </section>
+            );
+          })}
+        </Table>
+      ) : <Empty icon="calendar">Nessuna edizione. <Link className="text-wine underline" href="/docente/corsi/edizioni/nuova">Creane una</Link> oppure avvia un percorso da un preventivo accettato.</Empty>}
     </>
   );
 }

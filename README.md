@@ -53,6 +53,17 @@ Ho applicato questi default, tutti modificabili:
 - **Confronti nel tempo.** Le domande a scala con la stessa chiave `dimension` vengono confrontate tra loro, per esempio `sposa_tacchi` nel test di arrivo e in quello di fine incontro. Le rubriche della docente stanno in righe separate dall'autovalutazione dell'allieva.
 - **Quiz.** Le risposte corrette vengono tolte dal contenuto prima di inviarlo al browser dell'allieva (`stripAnswerKey`).
 
+## Design system "LN Studio"
+
+L'interfaccia segue il pacchetto `../LN_Studio_Pacchetto_UIUX` (tavole e prototipo del 22/10/2026):
+- **Token** in `src/app/globals.css`: bordeaux `#742D43`, prugna `#542033`, avorio `#F8F6F3`, bianco caldo, rosa cipria, champagne `#AF9570`. I font sono EB Garamond per i titoli e Inter per l'interfaccia, entrambi da validare con il brand ufficiale.
+- **Componenti** in `src/components/ui.tsx`: pulsanti, card, tabelle, badge, indicatori, filtri, tab, stepper, data in riquadro, iniziali, barra di avanzamento. Le icone sono in `src/components/icons.tsx`.
+- **Struttura:** sidebar raggruppata in Workspace, Gestione didattica e Amministrazione, con breadcrumb, ricerca globale (`/docente/cerca`) e menu a scomparsa su mobile.
+- **Rispetto al prototipo:**
+  - i dati sono tutti reali: le percentuali derivano dalle presenze, l'evoluzione dalle sole domande equivalenti;
+  - i moduli lunghi (anagrafica, corso, edizione, assegnazione) sono pagine dedicate invece di finestre modali, perché si leggono meglio, hanno un link proprio e funzionano su mobile;
+  - è stata aggiunta la pagina **Calendario**, con la vista settimanale e "Valuta lezione".
+
 ## Prima della produzione
 - Passare a Postgres: cambiare il `provider` in `prisma/schema.prisma` e il valore di `DATABASE_URL`.
 - Collegare un provider email con retry (`src/lib/notify.ts`).

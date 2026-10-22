@@ -43,11 +43,12 @@ export async function saveCourseType(id: string | null, _: ActionState, form: Fo
     let slug = slugify(data.title);
     if (await db.courseType.findUnique({ where: { slug } })) slug = `${slug}-${Date.now().toString(36)}`;
     const ct = await db.courseType.create({ data: { ...data, slug } });
-    id = ct.id;
+    await audit(user.id, "courseType.create", "CourseType", ct.id);
+    redirect("/docente/corsi");
   }
   await audit(user.id, "courseType.save", "CourseType", id);
   revalidatePath("/docente/corsi");
-  return { ok: "Tipologia salvata." };
+  return { ok: "Corso salvato." };
 }
 
 export async function setCourseTypeStatus(id: string, status: "ACTIVE" | "ARCHIVED") {
@@ -120,6 +121,7 @@ export async function updateLesson(lessonId: string, form: FormData) {
   await db.lesson.update({
     where: { id: lessonId },
     data: {
+      // datetime-local ("2026-10-26T10:30") viene interpretato nell'ora locale del server
       date: form.get("date") ? new Date(String(form.get("date"))) : null,
       topic: String(form.get("topic") ?? "").trim() || null,
       durationMin: Math.max(0, Number(form.get("durationMin") || lesson.durationMin)),

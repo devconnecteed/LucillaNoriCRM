@@ -2,132 +2,194 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireStaff, studentScope, editionScope } from "@/lib/auth";
 import { enrollmentWhereForStaff } from "@/lib/guards";
-import { ASSIGNMENT_STATUS_LABELS } from "@/lib/constants";
-import { Badge, ButtonLink, Card, Empty, PageHeader, Stat, fmtDate, statusTone } from "@/components/ui";
+import { addDays, capitalize, relativeDay, shortName, startOfDay } from "@/lib/dates";
+import { euro } from "@/lib/quote";
+import { ActivityItem, Badge, ButtonLink, Card, DateBox, Empty, PageHeader, PanelTitle, Stat, fmtTime } from "@/components/ui";
 
-export const metadata = { title: "Dashboard" };
+export const metadata = { title: "Panoramica" };
 
 export default async function Dashboard() {
   const user = await requireStaff();
-  const enrollmentWhere = enrollmentWhereForStaff(user);
+  const scope = enrollmentWhereForStaff(user);
+  const quoteScope = user.role === "ADMIN" ? {} : { teacherId: user.id };
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const today = startOfDay(now);
 
-  const [students, editions, pending, toReview, toCertify, upcoming, quotes] = await Promise.all([
+  const [students, newStudents, editions, toReview, waiting, certTotal, certMonth, upcoming, closing, quotesSent, quotesAccepted, activeEnrollments] = await Promise.all([
     db.student.count({ where: { ...studentScope(user), status: "ACTIVE" } }),
-    db.courseEdition.findMany({ where: { ...editionScope(user), status: { in: ["PLANNED", "RUNNING"] } }, include: { courseType: true, lessons: true, _count: { select: { enrollments: true } } } }),
-    db.assignment.findMany({
-      where: { enrollment: enrollmentWhere, status: { not: "COMPLETED" }, version: { template: { audience: "STUDENT" } } },
-      include: { version: { include: { template: true } }, enrollment: { include: { student: true } } },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-    }),
+    db.student.count({ where: { ...studentScope(user), createdAt: { gte: monthStart } } }),
+    db.courseEdition.findMany({ where: { ...editionScope(user), status: { in: ["PLANNED", "RUNNING"] } }, select: { courseTypeId: true } }),
     db.response.findMany({
-      where: { status: "SUBMITTED", published: false, assignment: { enrollment: enrollmentWhere } },
+      where: { status: "SUBMITTED", published: false, assignment: { enrollment: scope } },
       include: { assignment: { include: { version: { include: { template: true } }, enrollment: { include: { student: true } } } } },
       orderBy: { submittedAt: "desc" },
-      take: 8,
+    }),
+    db.assignment.count({ where: { enrollment: scope, status: { in: ["SENT", "OPENED", "IN_PROGRESS"] }, version: { template: { audience: "STUDENT" } } } }),
+    db.certificate.count({ where: { enrollment: scope, revokedAt: null } }),
+    db.certificate.count({ where: { enrollment: scope, revokedAt: null, issuedAt: { gte: monthStart } } }),
+    db.lesson.findMany({
+      where: { edition: { ...editionScope(user), status: { in: ["PLANNED", "RUNNING"] } }, date: { gte: today } },
+      include: { edition: { include: { courseType: true, enrollments: { include: { student: true } } } } },
+      orderBy: { date: "asc" },
+      take: 4,
     }),
     db.enrollment.findMany({
-      where: { ...enrollmentWhere, status: "COMPLETED", certificates: { none: { revokedAt: null } } },
-      include: { student: true, edition: { include: { courseType: true } } },
+      where: { ...scope, status: { in: ["IN_PROGRESS", "COMPLETED"] }, certificates: { none: { revokedAt: null } }, edition: { courseType: { certificateEnabled: true } } },
+      include: { student: true, edition: { include: { lessons: true } } },
     }),
-    db.lesson.findMany({
-      where: { edition: { ...editionScope(user), status: { in: ["PLANNED", "RUNNING"] } }, date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
-      include: { edition: true },
-      orderBy: { date: "asc" },
-      take: 5,
-    }),
-    db.quote.findMany({
-      where: { ...(user.role === "ADMIN" ? {} : { teacherId: user.id }), OR: [{ status: "SENT" }, { status: "ACCEPTED", editionId: null }] },
-      orderBy: { updatedAt: "desc" },
+    db.quote.findMany({ where: { ...quoteScope, status: "SENT" }, orderBy: { sentAt: "desc" } }),
+    db.quote.findMany({ where: { ...quoteScope, status: "ACCEPTED", editionId: null }, orderBy: { acceptedAt: "desc" } }),
+    db.enrollment.findMany({
+      where: { ...scope, status: { in: ["NOT_STARTED", "IN_PROGRESS"] } },
+      include: { attendances: true, edition: { include: { courseType: true, lessons: true } } },
     }),
   ]);
-  const acceptedQuotes = quotes.filter((q) => q.status === "ACCEPTED");
 
-  const closing = editions.filter((e) => e.lessons.length && e.lessons.every((l) => l.date && l.date < new Date()));
+  // Percorsi vicini al termine: tutte le lezioni passate (o iscrizione completata) e nessun attestato.
+  const nearEnd = closing.filter((e) => e.status === "COMPLETED" || (e.edition.lessons.length > 0 && e.edition.lessons.every((l) => l.date && l.date < now)));
+  const lessonsThisWeek = upcoming.filter((l) => l.date && l.date < addDays(today, 7)).length;
+
+  // Avanzamento per tipologia = lezioni frequentate / lezioni previste, sulle iscrizioni attive.
+  const byCourse = new Map<string, { title: string; done: number; total: number }>();
+  for (const e of activeEnrollments) {
+    const row = byCourse.get(e.edition.courseTypeId) ?? { title: e.edition.courseType.title, done: 0, total: 0 };
+    row.done += e.attendances.filter((a) => a.present).length;
+    row.total += e.edition.lessons.length;
+    byCourse.set(e.edition.courseTypeId, row);
+  }
+
+  const dateLabel = capitalize(new Intl.DateTimeFormat("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now));
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  const hour = now.getHours();
+  const greeting = hour < 13 ? "Buongiorno" : hour < 18 ? "Buon pomeriggio" : "Buonasera";
 
   return (
     <>
-      <PageHeader title={`Buongiorno, ${user.name.split(" ")[0]}`} subtitle="Il riepilogo di oggi"
-        actions={<><ButtonLink href="/docente/allieve/nuova">+ Nuova allieva</ButtonLink><ButtonLink variant="secondary" href="/docente/valutazioni">Assegna questionario</ButtonLink></>} />
+      <PageHeader
+        eyebrow="Il tuo atelier digitale"
+        title="La tua scuola, in un solo luogo."
+        subtitle="Ogni allieva ha un percorso unico. Qui puoi seguirlo, passo dopo passo."
+        actions={<>
+          <ButtonLink variant="secondary" icon="send" href="/docente/valutazioni/assegna">Assegna questionario</ButtonLink>
+          <ButtonLink icon="plus" href="/docente/allieve/nuova">Nuova allieva</ButtonLink>
+        </>}
+      />
 
-      {acceptedQuotes.length > 0 && (
-        <div className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900">
-          <b>{acceptedQuotes.length === 1 ? "1 preventivo accettato" : `${acceptedQuotes.length} preventivi accettati`}</b> da avviare:{" "}
-          {acceptedQuotes.map((q, i) => <span key={q.id}>{i > 0 && ", "}<Link className="underline" href={`/docente/preventivi/${q.id}`}>{q.prospectFirstName} {q.prospectLastName}</Link></span>)}
+      <section className="relative overflow-hidden rounded-[13px] bg-wine-dark px-6 py-7 text-white sm:flex sm:min-h-[180px] sm:items-center sm:justify-between sm:gap-8 sm:px-9">
+        <div className="relative z-10">
+          <div className="eyebrow !text-[#d4b99c]">{dateLabel}</div>
+          <h2 className="font-serif text-[32px] leading-tight sm:text-[36px]">{greeting}, {user.name.split(" ")[0]}.</h2>
+          <p className="mt-2.5 max-w-xl text-[13px] leading-relaxed text-[#e6d9d9]">
+            La bellezza di un percorso è vedere quanta strada si è fatta.{" "}
+            {[
+              toReview.length ? `hai ${plural(toReview.length, "valutazione", "valutazioni")} da completare` : "nessuna valutazione in attesa",
+              lessonsThisWeek ? `${plural(lessonsThisWeek, "lezione", "lezioni")} nei prossimi sette giorni` : "nessuna lezione in agenda questa settimana",
+            ].join(" e ").replace(/^./, (c) => c.toUpperCase())}.
+          </p>
         </div>
-      )}
-      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-6">
-        <Stat label="Allieve attive" value={students} href="/docente/allieve" />
-        <Stat label="Edizioni in corso" value={editions.length} href="/docente/corsi" />
-        <Stat label="Preventivi in attesa" value={quotes.length - acceptedQuotes.length} href="/docente/preventivi?stato=SENT" />
-        <Stat label="Questionari pendenti" value={pending.length} />
-        <Stat label="Da rivedere" value={toReview.length} href="/docente/valutazioni" />
-        <Stat label="Attestati da emettere" value={toCertify.length} href="/docente/attestati" />
+        <Link href="/docente/calendario" className="relative z-10 mt-5 inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-[13px] font-bold text-wine sm:mt-0">
+          Visualizza l’agenda <span aria-hidden="true">↗</span>
+        </Link>
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-6 right-6 font-serif text-[190px] italic leading-[0.7] text-white/[0.055] sm:right-24">LN</div>
+      </section>
+
+      <div className="my-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <Stat label="Allieve attive" value={students} icon="users" href="/docente/allieve" hint={newStudents ? `+${newStudents} nuovi ingressi questo mese` : "Nessun nuovo ingresso questo mese"} hintTone={newStudents ? "ok" : "muted"} />
+        <Stat label="Percorsi in corso" value={editions.length} icon="book" href="/docente/corsi" hint={plural(new Set(editions.map((e) => e.courseTypeId)).size, "tipologia di corso", "tipologie di corso")} hintTone="muted" />
+        <Stat label="Da valutare" value={toReview.length} icon="clipboard" href="/docente/valutazioni" hint={toReview.length ? "Richiedono attenzione" : "Tutto revisionato"} hintTone={toReview.length ? "wine" : "ok"} />
+        <Stat label="Attestati emessi" value={certTotal} icon="award" href="/docente/attestati" hint={certMonth ? `+${certMonth} questo mese` : "Nessuno questo mese"} hintTone={certMonth ? "ok" : "muted"} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-5 xl:grid-cols-[1.38fr_1fr]">
         <Card>
-          <h2 className="mb-4 font-serif text-lg text-ln-900">Compilazioni da rivedere e pubblicare</h2>
-          {toReview.length ? (
-            <ul className="divide-y divide-stone-100">
-              {toReview.map((r) => (
-                <li key={r.id}>
-                  <Link href={`/docente/compilazioni/${r.assignmentId}`} className="flex items-center justify-between gap-3 py-3 hover:text-ln-700">
-                    <span><b>{r.assignment.enrollment.student.firstName} {r.assignment.enrollment.student.lastName}</b> · {r.assignment.version.template.title}</span>
-                    <span className="shrink-0 text-xs text-stone-500">{fmtDate(r.submittedAt)}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : <Empty>Nessuna compilazione in attesa.</Empty>}
-        </Card>
-
-        <Card>
-          <h2 className="mb-4 font-serif text-lg text-ln-900">Questionari in attesa delle allieve</h2>
-          {pending.length ? (
-            <ul className="divide-y divide-stone-100">
-              {pending.map((a) => (
-                <li key={a.id}>
-                  <Link href={`/docente/compilazioni/${a.id}`} className="flex items-center justify-between gap-3 py-3 hover:text-ln-700">
-                    <span>{a.enrollment.student.firstName} {a.enrollment.student.lastName} · {a.version.template.title}</span>
-                    <Badge tone={statusTone(a.status)}>{ASSIGNMENT_STATUS_LABELS[a.status]}</Badge>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : <Empty>Tutto compilato.</Empty>}
-        </Card>
-
-        <Card>
-          <h2 className="mb-4 font-serif text-lg text-ln-900">Prossime lezioni</h2>
+          <PanelTitle title="Le prossime lezioni" action={<Link href="/docente/calendario">Apri calendario ↗</Link>} />
           {upcoming.length ? (
-            <ul className="divide-y divide-stone-100">
-              {upcoming.map((l) => (
-                <li key={l.id}>
-                  <Link href={`/docente/corsi/${l.editionId}`} className="flex justify-between gap-3 py-3 hover:text-ln-700">
-                    <span>{l.edition.title} · lezione {l.number}{l.topic ? ` – ${l.topic}` : ""}</span>
-                    <span className="shrink-0 text-xs text-stone-500">{fmtDate(l.date)}</span>
-                  </Link>
-                </li>
-              ))}
+            <ul>
+              {upcoming.map((l) => {
+                const who = l.edition.enrollments.map((e) => shortName(e.student.firstName, e.student.lastName));
+                const time = fmtTime(l.date);
+                return (
+                  <li key={l.id}>
+                    <Link href={`/docente/corsi/${l.editionId}`} className="flex items-center gap-3.5 border-b border-[#f2edeb] py-3.5 last:border-b-0 hover:bg-[#fdf9f7]">
+                      <DateBox date={l.date!} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[13px] font-semibold">{l.topic || `Lezione ${l.number}`}</div>
+                        <div className="mt-1 truncate text-xs text-muted">
+                          {[time, who.length > 2 ? `${who.length} allieve` : who.join(", "), l.edition.courseType.title].filter(Boolean).join(" · ")}
+                        </div>
+                      </div>
+                      <Badge tone={relativeDay(l.date!) === "Domani" || relativeDay(l.date!) === "Oggi" ? "pink" : "neutral"}>{relativeDay(l.date!)}</Badge>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
-          ) : <Empty>Nessuna lezione in calendario.</Empty>}
+          ) : <Empty icon="calendar">Nessuna lezione in calendario. Imposta le date nelle edizioni dei corsi.</Empty>}
         </Card>
 
         <Card>
-          <h2 className="mb-4 font-serif text-lg text-ln-900">Corsi in conclusione e attestati</h2>
-          {closing.length || toCertify.length ? (
-            <ul className="divide-y divide-stone-100 text-sm">
-              {closing.map((e) => (
-                <li key={e.id} className="py-3"><Link className="hover:text-ln-700" href={`/docente/corsi/${e.id}`}>{e.title}: tutte le lezioni svolte, verifica completamenti</Link></li>
-              ))}
-              {toCertify.map((en) => (
-                <li key={en.id} className="py-3"><Link className="hover:text-ln-700" href={`/docente/attestati?iscrizione=${en.id}`}>Attestato da emettere: {en.student.firstName} {en.student.lastName} · {en.edition.courseType.title}</Link></li>
-              ))}
-            </ul>
-          ) : <Empty>Niente da segnalare.</Empty>}
+          <PanelTitle title="La tua attenzione" action={<Link href="/docente/valutazioni">Gestisci tutto ↗</Link>} />
+          {toReview.length + nearEnd.length + quotesSent.length + quotesAccepted.length + waiting === 0 ? (
+            <Empty icon="check">Niente in sospeso. Ottimo lavoro!</Empty>
+          ) : (
+            <div>
+              {toReview.length > 0 && (
+                <ActivityItem icon="clipboard" href="/docente/valutazioni"
+                  title={`${plural(toReview.length, "questionario", "questionari")} da revisionare`}
+                  text="Risposte e valutazioni in attesa di approvazione."
+                  time={toReview[0].submittedAt ? relativeDay(toReview[0].submittedAt) : undefined} />
+              )}
+              {quotesAccepted.length > 0 && (
+                <ActivityItem icon="euro" href={`/docente/preventivi/${quotesAccepted[0].id}`}
+                  title={`${plural(quotesAccepted.length, "preventivo accettato", "preventivi accettati")} da avviare`}
+                  text={quotesAccepted.map((q) => `${q.prospectFirstName} ${q.prospectLastName}`).join(", ")}
+                  time={quotesAccepted[0].acceptedAt ? relativeDay(quotesAccepted[0].acceptedAt) : undefined} />
+              )}
+              {nearEnd.length > 0 && (
+                <ActivityItem icon="award" href="/docente/attestati"
+                  title={`${plural(nearEnd.length, "percorso vicino", "percorsi vicini")} al termine`}
+                  text="Controlla frequenza e completamento per l’attestato." />
+              )}
+              {quotesSent.length > 0 && (
+                <ActivityItem icon="file" href="/docente/preventivi?stato=SENT"
+                  title={`${plural(quotesSent.length, "preventivo", "preventivi")} da confermare`}
+                  text={`Inviati e in attesa di accettazione · ${euro(quotesSent.reduce((s, q) => s + q.totalCents, 0))}`}
+                  time={quotesSent[0].sentAt ? relativeDay(quotesSent[0].sentAt) : undefined} />
+              )}
+              {waiting > 0 && (
+                <ActivityItem icon="send" href="/docente/valutazioni"
+                  title={`${plural(waiting, "questionario", "questionari")} in attesa delle allieve`}
+                  text="Inviati o aperti, non ancora consegnati." />
+              )}
+            </div>
+          )}
         </Card>
       </div>
+
+      <Card className="mt-5">
+        <PanelTitle title="Il percorso delle tue allieve" action={<span className="text-xs font-normal text-muted">Iscrizioni attive</span>} />
+        {byCourse.size ? (
+          <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+            <div className="space-y-3">
+              {[...byCourse.values()].map((r) => {
+                const pct = r.total ? Math.round((r.done / r.total) * 100) : 0;
+                return (
+                  <div key={r.title} className="flex items-center gap-3">
+                    <span className="w-36 shrink-0 truncate text-xs text-[#665a58]">{r.title}</span>
+                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-[#f3eae8]"><span className="block h-full rounded-full bg-wine" style={{ width: `${pct}%` }} /></span>
+                    <span className="w-10 text-right text-xs text-wine">{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="callout">
+              Le percentuali indicano le lezioni frequentate rispetto a quelle previste, sulle iscrizioni attive.
+              Un questionario non è considerato automaticamente un esame: il risultato dipende dal tipo di scheda.
+            </p>
+          </div>
+        ) : <Empty icon="chart">Nessuna iscrizione attiva al momento.</Empty>}
+      </Card>
     </>
   );
 }

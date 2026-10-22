@@ -6,6 +6,14 @@ import { LIBRARY } from "./library";
 import { contentSchema } from "../src/lib/questionnaire/schema";
 
 const db = new PrismaClient();
+
+/** Lezioni demo settimanali alle 10:30, a partire da domani. */
+function lessonDate(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + 1 + (n - 1) * 7);
+  d.setHours(10, 30, 0, 0);
+  return d;
+}
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "LnDemo2026!";
 
 async function main() {
@@ -69,7 +77,7 @@ async function main() {
       data: {
         courseTypeId: courses.stile, teacherId: teacher.id, title: "Stile e Portamento · Demo", status: "RUNNING",
         startDate: new Date(), minAttendancePct: 75,
-        lessons: { create: [1, 2, 3, 4].map((n) => ({ number: n, durationMin: 60, topic: ["Postura e camminata", "Braccia, mani e sguardo", "Tacchi e giri", "Ripasso e presentazione"][n - 1], date: new Date(Date.now() + (n - 1) * 7 * 86400_000) })) },
+        lessons: { create: [1, 2, 3, 4].map((n) => ({ number: n, durationMin: 60, topic: ["Postura e camminata", "Braccia, mani e sguardo", "Tacchi e giri", "Ripasso e presentazione"][n - 1], date: lessonDate(n) })) },
       },
     });
     const enrollment = await db.enrollment.create({ data: { studentId: student.id, editionId: edition.id, status: "IN_PROGRESS" } });

@@ -8,7 +8,7 @@ type Props = { item: Item; value: AnswerValue | undefined; onChange: (v: AnswerV
 const pill =
   "min-h-11 rounded-xl border px-3 py-2 text-sm transition focus-within:ring-2 focus-within:ring-ln-300 cursor-pointer select-none";
 const pillOn = "border-ln-600 bg-ln-700 text-white shadow-sm";
-const pillOff = "border-stone-300 bg-white text-ink hover:border-ln-400";
+const pillOff = "border-[#e0d3cf] bg-white text-ink hover:border-ln-400";
 
 /** Rendering di una singola domanda. Tutti gli input sono nativi (radio/checkbox) per accessibilità e tastiera. */
 export function ItemInput({ item, value, onChange, invalid, disabled }: Props) {
@@ -76,8 +76,8 @@ export function ItemInput({ item, value, onChange, invalid, disabled }: Props) {
       return (
         <div className="space-y-4">
           {item.criteria.map((c) => (
-            <div key={c.id} className="rounded-xl bg-stone-50 p-3">
-              <div className={cx("mb-2 text-sm font-medium", invalid && obj[c.id] === undefined && "text-red-700")}>{c.label}</div>
+            <div key={c.id} className="rounded-xl bg-[#faf8f7] p-3">
+              <div className={cx("mb-2 text-sm font-medium", invalid && obj[c.id] === undefined && "text-[#a4434a]")}>{c.label}</div>
               <ScaleInput name={`${name}-${c.id}`} min={item.min} max={item.max} minLabel={item.minLabel} maxLabel={item.maxLabel}
                 value={obj[c.id]} disabled={disabled} onChange={(n) => onChange({ ...obj, [c.id]: n as number })} />
             </div>
@@ -93,13 +93,13 @@ export function ItemInput({ item, value, onChange, invalid, disabled }: Props) {
           <table className="w-full min-w-[480px] text-sm">
             <thead>
               <tr>
-                <th className="py-2 pr-2 text-left font-medium text-stone-600">Esercizio</th>
-                {item.days.map((d) => <th key={d} className="px-1 py-2 text-center font-medium text-stone-600">{d}</th>)}
+                <th className="py-2 pr-2 text-left font-medium text-muted">Esercizio</th>
+                {item.days.map((d) => <th key={d} className="px-1 py-2 text-center font-medium text-muted">{d}</th>)}
               </tr>
             </thead>
             <tbody>
               {item.rows.map((r) => (
-                <tr key={r.id} className="border-t border-stone-100">
+                <tr key={r.id} className="border-t border-[#f2edeb]">
                   <td className="py-2 pr-2">{r.label}</td>
                   {item.days.map((d) => {
                     const on = obj[r.id]?.includes(d) ?? false;
@@ -145,7 +145,7 @@ function ScaleInput({ name, min, max, minLabel, maxLabel, value, onChange, disab
         })}
       </div>
       {(minLabel || maxLabel) && (
-        <div className="mt-1 flex justify-between text-xs text-stone-500">
+        <div className="mt-1 flex justify-between text-xs text-muted">
           <span>{min} = {minLabel}</span>
           <span>{max} = {maxLabel}</span>
         </div>

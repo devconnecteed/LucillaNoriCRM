@@ -68,7 +68,7 @@ export function QuoteBuilder({ action, courses, students, initial }: {
       <>
         <div className="space-y-6">
           <Card className="space-y-4">
-            <h2 className="font-serif text-lg text-ln-900">Destinataria</h2>
+            <h2 className="font-serif text-[22px] text-wine-dark">Destinataria</h2>
             {students.length > 0 && (
               <Field label="Allieva già in anagrafica (facoltativo)">
                 <select className="input" name="studentId" value={studentId} onChange={(e) => {
@@ -97,7 +97,7 @@ export function QuoteBuilder({ action, courses, students, initial }: {
           </Card>
 
           <Card className="space-y-4">
-            <h2 className="font-serif text-lg text-ln-900">Corso</h2>
+            <h2 className="font-serif text-[22px] text-wine-dark">Corso</h2>
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Tipologia *">
                 <select className="input" name="courseTypeId" value={courseId} onChange={(e) => {
@@ -120,35 +120,35 @@ export function QuoteBuilder({ action, courses, students, initial }: {
               <Field label="Durata lezione (min)"><input className="input" type="number" min={15} name="lessonMinutes" defaultValue={initial.lessonMinutes} /></Field>
             </div>
             {course && (
-              <p className="text-xs text-stone-500">
+              <p className="text-xs text-muted">
                 Listino: {course.packagePriceCents != null ? `pacchetto ${course.durationLessons} lezioni ${euro(course.packagePriceCents)}` : "nessun pacchetto"}
                 {" · "}{course.lessonPriceCents != null ? `lezione singola ${euro(course.lessonPriceCents)}` : "nessun prezzo a lezione"}
-                {noPrices && <span className="text-amber-700"> — imposta i prezzi nella tipologia (Corsi) per il calcolo automatico.</span>}
+                {noPrices && <span className="text-warn"> — imposta i prezzi nella tipologia (Corsi) per il calcolo automatico.</span>}
               </p>
             )}
           </Card>
 
           <Card className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-serif text-lg text-ln-900">Voci</h2>
-              <button type="button" className="text-sm text-ln-700 underline" onClick={() => regenerate()}>Ricalcola da listino</button>
+              <h2 className="font-serif text-[22px] text-wine-dark">Voci</h2>
+              <button type="button" className="text-sm text-wine underline" onClick={() => regenerate()}>Ricalcola da listino</button>
             </div>
-            <div className="hidden grid-cols-[1fr_70px_110px_100px_36px] gap-2 text-xs font-medium text-stone-500 sm:grid">
+            <div className="hidden grid-cols-[1fr_70px_110px_100px_36px] gap-2 text-xs font-medium text-muted sm:grid">
               <span>Descrizione</span><span>Q.tà</span><span>Prezzo unit. €</span><span className="text-right">Importo</span><span />
             </div>
             {rows.map((r, i) => (
-              <div key={i} className="grid grid-cols-[1fr_70px_110px] gap-2 rounded-xl bg-stone-50 p-2 sm:grid-cols-[1fr_70px_110px_100px_36px] sm:bg-transparent sm:p-0">
+              <div key={i} className="grid grid-cols-[1fr_70px_110px] gap-2 rounded-xl bg-[#faf8f7] p-2 sm:grid-cols-[1fr_70px_110px_100px_36px] sm:bg-transparent sm:p-0">
                 <input className="input col-span-3 sm:col-span-1" aria-label="Descrizione" value={r.label} onChange={(e) => setRow(i, { label: e.target.value })} />
                 <input className="input" aria-label="Quantità" inputMode="decimal" value={r.qty} onChange={(e) => setRow(i, { qty: e.target.value })} />
                 <input className="input" aria-label="Prezzo unitario" inputMode="decimal" value={r.unit} onChange={(e) => setRow(i, { unit: e.target.value })} />
                 <span className="self-center text-right text-sm font-medium">{euro(Math.round(lines[i].qty * lines[i].unitCents))}</span>
                 <button type="button" aria-label="Rimuovi voce" disabled={rows.length === 1}
-                  className="h-9 w-9 self-center rounded-lg border border-stone-200 bg-white text-stone-500 hover:bg-ln-50 disabled:opacity-30"
+                  className="h-9 w-9 self-center rounded-lg border border-line bg-white text-muted hover:bg-ln-50 disabled:opacity-30"
                   onClick={() => { if (i === 0) setAutoFirst(false); setRows((x) => x.filter((_, j) => j !== i)); }}>✕</button>
               </div>
             ))}
             <div className="flex flex-wrap gap-2 pt-1">
-              <span className="text-sm text-stone-600">Aggiungi:</span>
+              <span className="text-sm text-muted">Aggiungi:</span>
               {[
                 ["Lezione aggiuntiva", course?.lessonPriceCents ?? 0],
                 ["Prova in location / chiesa", 0],
@@ -156,7 +156,7 @@ export function QuoteBuilder({ action, courses, students, initial }: {
                 ["Voce libera", 0],
               ].map(([label, cents]) => (
                 <button key={label as string} type="button" onClick={() => addRow(label as string, cents as number)}
-                  className="rounded-full bg-ln-50 px-3 py-1 text-xs font-medium text-ln-800 hover:bg-ln-100">+ {label}</button>
+                  className="rounded-full bg-ln-50 px-3 py-1 text-xs font-medium text-wine hover:bg-ln-100">+ {label}</button>
               ))}
             </div>
           </Card>
@@ -174,7 +174,7 @@ export function QuoteBuilder({ action, courses, students, initial }: {
 
         <aside className="xl:sticky xl:top-6 xl:h-fit">
           <Card className="space-y-4 border-ln-200">
-            <h2 className="font-serif text-lg text-ln-900">Riepilogo</h2>
+            <h2 className="font-serif text-[22px] text-wine-dark">Riepilogo</h2>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Sconto %"><input className="input" name="discountPct" inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)} /></Field>
               <Field label="IVA %" hint="0 se in regime forfettario"><input className="input" name="vatRate" inputMode="decimal" value={vat} onChange={(e) => setVat(e.target.value)} /></Field>
@@ -183,10 +183,10 @@ export function QuoteBuilder({ action, courses, students, initial }: {
               <Row label="Imponibile voci" value={euro(totals.subtotalCents)} />
               {totals.discountCents > 0 && <Row label={`Sconto ${discount}%`} value={`− ${euro(totals.discountCents)}`} />}
               {totals.vatCents > 0 && <Row label={`IVA ${vat}%`} value={euro(totals.vatCents)} />}
-              <div className="flex justify-between border-t border-ln-100 pt-2 font-serif text-2xl text-ln-800">
+              <div className="flex justify-between border-t border-ln-100 pt-2 font-serif text-2xl text-wine">
                 <dt>Totale</dt><dd>{euro(totals.totalCents)}</dd>
               </div>
-              {lessons > 0 && <p className="text-right text-xs text-stone-500">≈ {euro(Math.round(totals.totalCents / lessons))} a lezione</p>}
+              {lessons > 0 && <p className="text-right text-xs text-muted">≈ {euro(Math.round(totals.totalCents / lessons))} a lezione</p>}
             </dl>
             <input type="hidden" name="lines" value={JSON.stringify(lines)} />
             <FormMessage state={state} />
@@ -199,5 +199,5 @@ export function QuoteBuilder({ action, courses, students, initial }: {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
-  return <div className={cx("flex justify-between")}><dt className="text-stone-600">{label}</dt><dd>{value}</dd></div>;
+  return <div className={cx("flex justify-between")}><dt className="text-muted">{label}</dt><dd>{value}</dd></div>;
 }

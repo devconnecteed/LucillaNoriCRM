@@ -1,32 +1,74 @@
+import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/auth";
+import { enrollmentWhereForStaff } from "@/lib/guards";
 import { logout } from "@/app/auth-actions";
-import { SideNav } from "@/components/nav";
-import { Logo } from "@/components/ui";
-
-const NAV = [
-  { href: "/docente", label: "Dashboard" },
-  { href: "/docente/allieve", label: "Allieve" },
-  { href: "/docente/corsi", label: "Corsi" },
-  { href: "/docente/preventivi", label: "Preventivi" },
-  { href: "/docente/questionari", label: "Questionari" },
-  { href: "/docente/valutazioni", label: "Valutazioni" },
-  { href: "/docente/attestati", label: "Attestati" },
-];
+import { AppShell, Breadcrumb, type NavGroup } from "@/components/nav";
+import { Icon } from "@/components/icons";
+import { Initials } from "@/components/ui";
 
 export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
+  const scope = enrollmentWhereForStaff(user);
+  const [toReview, acceptedQuotes] = await Promise.all([
+    db.response.count({ where: { status: "SUBMITTED", published: false, assignment: { enrollment: scope } } }),
+    db.quote.count({ where: { ...(user.role === "ADMIN" ? {} : { teacherId: user.id }), status: "ACCEPTED", editionId: null } }),
+  ]);
+
+  const groups: NavGroup[] = [
+    {
+      caption: "Workspace",
+      items: [
+        { href: "/docente", label: "Panoramica", icon: "dashboard" },
+        { href: "/docente/allieve", label: "Allieve", icon: "users" },
+        { href: "/docente/corsi", label: "Percorsi e corsi", icon: "book" },
+        { href: "/docente/calendario", label: "Calendario", icon: "calendar" },
+      ],
+    },
+    {
+      caption: "Gestione didattica",
+      items: [
+        { href: "/docente/questionari", label: "Questionari", icon: "clipboard" },
+        { href: "/docente/valutazioni", label: "Valutazioni", icon: "chart", count: toReview },
+        { href: "/docente/attestati", label: "Attestati", icon: "award" },
+      ],
+    },
+    {
+      caption: "Amministrazione",
+      items: [{ href: "/docente/preventivi", label: "Preventivi", icon: "file", count: acceptedQuotes }],
+    },
+  ];
+
+  const today = new Intl.DateTimeFormat("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
+
   return (
-    <div className="min-h-dvh lg:flex">
-      <aside className="border-b border-stone-200 bg-white px-4 py-4 lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:shrink-0 lg:border-b-0 lg:border-r lg:py-6">
-        <div className="mb-3 lg:mb-8"><Logo small /></div>
-        <SideNav items={NAV} />
-        <div className="mt-4 border-t border-stone-100 pt-4 text-xs text-stone-500 lg:absolute lg:bottom-6 lg:left-4 lg:right-4">
-          <div className="font-medium text-stone-700">{user.name}</div>
-          <div>{user.role === "ADMIN" ? "Amministratore" : "Docente"}</div>
-          <form action={logout}><button className="mt-2 text-ln-700 underline">Esci</button></form>
+    <AppShell
+      groups={groups}
+      footer={
+        <div className="flex items-center gap-2.5 px-1">
+          <Initials name={user.name} />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-xs font-semibold">{user.name}</div>
+            <div className="text-[11px] text-muted">{user.role === "ADMIN" ? "Amministratrice" : "Docente"}</div>
+          </div>
+          <form action={logout}>
+            <button aria-label="Esci" title="Esci" className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-blush hover:text-wine">
+              <Icon name="logout" className="h-4 w-4" />
+            </button>
+          </form>
         </div>
-      </aside>
-      <main className="min-w-0 flex-1 px-4 py-6 sm:px-8 lg:py-10">{children}</main>
-    </div>
+      }
+    >
+      <header className="sticky top-0 z-20 hidden h-[72px] items-center justify-between gap-6 border-b border-line bg-paper/90 px-8 backdrop-blur-md lg:flex xl:px-12">
+        <Breadcrumb />
+        <div className="flex items-center gap-3">
+          <form action="/docente/cerca" role="search" className="flex w-64 items-center gap-2 rounded-[9px] border border-line bg-white px-3 py-2 text-xs text-[#9c9390] focus-within:border-[#b78693]">
+            <Icon name="search" className="h-4 w-4" />
+            <input name="q" aria-label="Cerca allieve, corsi, questionari" placeholder="Cerca allieve, corsi, test…" className="w-full bg-transparent text-ink outline-none placeholder:text-[#9c9390]" />
+          </form>
+          <span className="text-[11px] capitalize text-muted">{today}</span>
+        </div>
+      </header>
+      <main className="view-in mx-auto max-w-[1550px] px-4 pb-16 pt-6 sm:px-7 lg:px-8 lg:pt-10 xl:px-12">{children}</main>
+    </AppShell>
   );
 }

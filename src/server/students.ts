@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { createInvite, getStudentForStaff, requireStaff } from "@/lib/auth";
@@ -84,7 +85,11 @@ export async function updateStudent(studentId: string, _: ActionState, form: For
   const d = parsed.data;
   await db.student.update({
     where: { id: studentId },
-    data: { ...d, birthDate: d.birthDate ? new Date(d.birthDate) : null, bridalInfo: bridal ?? undefined },
+    data: {
+      ...d,
+      birthDate: d.birthDate ? new Date(d.birthDate) : null,
+      bridalInfo: form.get("bridalClear") === "1" ? Prisma.DbNull : bridal ?? undefined,
+    },
   });
   // Cambio email: si riflette sull'account (se non usata da altri)
   const s = await db.student.findUniqueOrThrow({ where: { id: studentId } });

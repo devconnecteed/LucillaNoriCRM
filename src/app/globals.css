@@ -1,32 +1,101 @@
 @import "tailwindcss";
 
-/* Palette LN: rosa antico / bordeaux su avorio (dai modelli cartacei). */
+/*
+ * Design system "LN Studio" (LN_Studio_Pacchetto_UIUX, 22/10/2026).
+ * Font e colori sono quelli proposti nelle tavole: da validare con il brand ufficiale prima della produzione.
+ */
 @theme {
-  --color-ln-50: #fdf6f7;
-  --color-ln-100: #f9e7ea;
-  --color-ln-200: #f1cdd4;
-  --color-ln-300: #e3a6b3;
-  --color-ln-400: #cf7489;
-  --color-ln-500: #b84d67;
-  --color-ln-600: #9c3652;
-  --color-ln-700: #822a44;
-  --color-ln-800: #6b263b;
-  --color-ln-900: #4a1a29;
-  --color-ivory: #fbf8f5;
-  --color-ink: #2f2a2b;
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+  /* Palette */
+  --color-wine: #742d43; /* azioni principali, selezioni */
+  --color-wine-dark: #542033; /* titoli, hero */
+  --color-wine-light: #a6586b;
+  --color-canvas: #f8f6f3; /* sfondo app */
+  --color-paper: #fffdfb; /* sidebar e pannelli */
+  --color-blush: #f5e9e9; /* evidenze soft */
+  --color-sand: #e8d8bc;
+  --color-gold: #af9570; /* accenti editoriali */
+  --color-ink: #322b2d; /* testo */
+  --color-muted: #857e7d; /* testi secondari */
+  --color-line: #e9e3df; /* bordi */
+
+  /* Scala bordeaux usata dai componenti */
+  --color-ln-50: #fbf6f5;
+  --color-ln-100: #f5e9e9;
+  --color-ln-200: #ecd8da;
+  --color-ln-300: #d9b6bf;
+  --color-ln-400: #b98b9b;
+  --color-ln-500: #a6586b;
+  --color-ln-600: #8c3d54;
+  --color-ln-700: #742d43;
+  --color-ln-800: #63263a;
+  --color-ln-900: #542033;
+  --color-ivory: #f8f6f3;
+
+  /* Stati */
+  --color-ok: #397b60;
+  --color-ok-bg: #e8f5ee;
+  --color-warn: #986b33;
+  --color-warn-bg: #fcf2df;
+  --color-info: #4d7891;
+  --color-info-bg: #eaf3f9;
+
+  --shadow-soft: 0 6px 24px rgba(68, 38, 38, 0.045);
+  --font-sans: var(--font-inter), "Avenir Next", "Segoe UI", Arial, sans-serif;
+  --font-serif: var(--font-garamond), Georgia, "Times New Roman", serif;
 }
 
+html {
+  font-size: 15px;
+}
 body {
-  background: var(--color-ivory);
+  background: var(--color-canvas);
   color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Campi form coerenti in tutta l'app */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid #c89caa;
+  outline-offset: 2px;
+}
+
+/* Campi form */
 .input {
-  @apply w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base text-ink shadow-sm outline-none transition focus:border-ln-500 focus:ring-2 focus:ring-ln-200 sm:text-sm;
+  @apply w-full rounded-lg border border-[#e8dfdb] bg-white px-3 py-2.5 text-base text-ink outline-none transition placeholder:text-[#aaa09d] focus:border-[#b78693] focus:shadow-[0_0_0_3px_#f8eef0] disabled:bg-canvas sm:text-sm;
+  min-height: 42px;
+}
+textarea.input {
+  min-height: 90px;
+  resize: vertical;
 }
 .label {
-  @apply mb-1 block text-sm font-medium text-stone-700;
+  @apply mb-2 block text-xs font-bold text-[#59494a];
+}
+
+/* Etichetta editoriale sopra i titoli */
+.eyebrow {
+  @apply mb-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-gold;
+}
+
+/* Riquadro di nota (bordo champagne) */
+.callout {
+  @apply rounded-r-lg border-l-[3px] border-[#c4a78a] bg-[#f9f3ef] px-4 py-3 text-xs leading-relaxed text-[#75625f];
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0.4;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.view-in {
+  animation: view-in 0.25s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .view-in {
+    animation: none;
+  }
 }

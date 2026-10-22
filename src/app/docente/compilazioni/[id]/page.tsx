@@ -10,6 +10,8 @@ import { ActionForm } from "@/components/action-form";
 import { AnswerDisplay, CorrectnessHint } from "@/components/questionnaire/answer-display";
 import { Badge, Button, ButtonLink, Card, Field, PageHeader, fmtDate, fmtDateTime, statusTone } from "@/components/ui";
 
+export const metadata = { title: "Revisione" };
+
 export default async function ResponsePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireStaff();
   const { id } = await params;
@@ -25,9 +27,10 @@ export default async function ResponsePage({ params }: { params: Promise<{ id: s
   return (
     <>
       <PageHeader
+        eyebrow="Revisione e pubblicazione"
         title={a.version.template.title}
         subtitle={<span className="flex flex-wrap items-center gap-2">
-          <Link className="text-ln-700 underline" href={`/docente/allieve/${student.id}`}>{student.firstName} {student.lastName}</Link>
+          <Link className="text-wine underline" href={`/docente/allieve/${student.id}`}>{student.firstName} {student.lastName}</Link>
           · {a.enrollment.edition.title}{a.lesson && ` · lezione ${a.lesson.number}`} · v{a.version.version}
           <Badge tone={statusTone(st)}>{ASSIGNMENT_STATUS_LABELS[st]}</Badge>
           {r?.published && <Badge tone="pink">Pubblicato all’allieva</Badge>}
@@ -38,17 +41,17 @@ export default async function ResponsePage({ params }: { params: Promise<{ id: s
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <div className="space-y-6">
           {!submitted && (
-            <Card className="text-sm text-stone-600">
+            <Card className="text-sm text-muted">
               {r ? `Compilazione in corso (ultimo salvataggio ${fmtDateTime(r.updatedAt)}). Le risposte in bozza non sono visibili finché non vengono consegnate.` : "Non ancora aperto."}
             </Card>
           )}
           {submitted && content.sections.map((s) => (
             <Card key={s.id}>
-              <h2 className="mb-3 font-serif text-lg text-ln-900">{s.title}</h2>
+              <h2 className="mb-3 font-serif text-[22px] text-wine-dark">{s.title}</h2>
               <dl className="space-y-3 text-sm">
                 {s.items.filter((i) => i.type !== "info").map((i) => (
-                  <div key={i.id} className="rounded-lg bg-stone-50 p-3">
-                    <dt className="text-stone-600">{i.label}</dt>
+                  <div key={i.id} className="rounded-lg bg-[#faf8f7] p-3">
+                    <dt className="text-muted">{i.label}</dt>
                     <dd className="mt-1 font-medium"><AnswerDisplay item={i} value={answers[i.id]} /></dd>
                     <CorrectnessHint item={i} value={answers[i.id]} />
                   </div>
@@ -61,8 +64,8 @@ export default async function ResponsePage({ params }: { params: Promise<{ id: s
         <aside className="space-y-6">
           {submitted && r && (
             <Card>
-              <h2 className="mb-3 font-serif text-lg text-ln-900">Revisione e pubblicazione</h2>
-              <p className="mb-3 text-sm text-stone-600">Consegnato il {fmtDateTime(r.submittedAt)} · tentativo {r.attempt}/{a.maxAttempts}</p>
+              <h2 className="mb-3 font-serif text-[22px] text-wine-dark">Revisione e pubblicazione</h2>
+              <p className="mb-3 text-sm text-muted">Consegnato il {fmtDateTime(r.submittedAt)} · tentativo {r.attempt}/{a.maxAttempts}</p>
               {score && score.maxScore > 0 && (
                 <p className="mb-3 rounded-lg bg-ln-50 p-3 text-sm">Punteggio automatico: <b>{score.score}/{score.maxScore}</b> ({score.percent}%)</p>
               )}
@@ -83,7 +86,7 @@ export default async function ResponsePage({ params }: { params: Promise<{ id: s
                     : <Button name="intent" value="publish">Salva e pubblica</Button>}
                 </div>
               </ActionForm>
-              <form action={reopenResponse.bind(null, a.id)} className="mt-4 border-t border-stone-100 pt-4">
+              <form action={reopenResponse.bind(null, a.id)} className="mt-4 border-t border-[#f2edeb] pt-4">
                 <Button variant="ghost">Riapri per modifiche {r.attempt < a.maxAttempts ? "(nuovo tentativo)" : ""}</Button>
               </form>
             </Card>
@@ -91,8 +94,8 @@ export default async function ResponsePage({ params }: { params: Promise<{ id: s
 
           {!submitted && (
             <Card className="space-y-4">
-              <h2 className="font-serif text-lg text-ln-900">Gestione</h2>
-              <p className="text-sm text-stone-600">Assegnato il {fmtDate(a.createdAt)}{a.dueAt && ` · scadenza ${fmtDate(a.dueAt)}`}</p>
+              <h2 className="font-serif text-[22px] text-wine-dark">Gestione</h2>
+              <p className="text-sm text-muted">Assegnato il {fmtDate(a.createdAt)}{a.dueAt && ` · scadenza ${fmtDate(a.dueAt)}`}</p>
               {a.version.template.audience === "STUDENT" && (
                 <form action={remindAssignment.bind(null, a.id)}><Button variant="secondary" className="w-full">Invia sollecito</Button></form>
               )}

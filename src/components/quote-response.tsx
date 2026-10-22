@@ -12,16 +12,16 @@ export function QuoteResponse({ token, firstName, teacherName }: { token: string
 
   if (acc?.ok)
     return (
-      <Card className="border-emerald-200 bg-emerald-50 text-center">
-        <h2 className="font-serif text-2xl text-emerald-900">Grazie {firstName}!</h2>
-        <p className="mt-2 text-sm text-emerald-900">Hai accettato il preventivo. {teacherName} ti contatterà a breve per fissare le lezioni; riceverai anche una email di conferma.</p>
+      <Card className="border-[#cfe6da] bg-ok-bg text-center">
+        <h2 className="font-serif text-2xl text-ok">Grazie {firstName}!</h2>
+        <p className="mt-2 text-sm text-ok">Hai accettato il preventivo. {teacherName} ti contatterà a breve per fissare le lezioni; riceverai anche una email di conferma.</p>
       </Card>
     );
   if (dec?.ok)
     return (
       <Card className="text-center">
-        <h2 className="font-serif text-xl text-ln-900">Risposta registrata</h2>
-        <p className="mt-2 text-sm text-stone-600">Grazie per averci fatto sapere. Se cambi idea scrivi pure a {teacherName}.</p>
+        <h2 className="font-serif text-[24px] text-wine-dark">Risposta registrata</h2>
+        <p className="mt-2 text-sm text-muted">Grazie per averci fatto sapere. Se cambi idea scrivi pure a {teacherName}.</p>
       </Card>
     );
 
@@ -33,7 +33,7 @@ export function QuoteResponse({ token, firstName, teacherName }: { token: string
 
   return (
     <Card className="space-y-4 border-ln-200">
-      <h2 className="font-serif text-xl text-ln-900">La tua risposta</h2>
+      <h2 className="font-serif text-[24px] text-wine-dark">La tua risposta</h2>
       <form action={accept} onSubmit={submit(accept)} className="space-y-3">
         <label className="block">
           <span className="label">Nome e cognome (vale come conferma)</span>
@@ -47,20 +47,20 @@ export function QuoteResponse({ token, firstName, teacherName }: { token: string
           <input type="checkbox" name="privacy" className="mt-1" required />
           <span>Ho letto l’informativa privacy e acconsento al trattamento dei miei dati per l’organizzazione del corso.</span>
         </label>
-        {acc?.error && <p role="alert" className="text-sm text-red-700">{acc.error}</p>}
+        {acc?.error && <p role="alert" className="text-sm text-[#a4434a]">{acc.error}</p>}
         <Button className="w-full" disabled={accepting}>{accepting ? "Invio…" : "Accetto il preventivo"}</Button>
       </form>
 
-      <div className="border-t border-stone-100 pt-3">
+      <div className="border-t border-[#f2edeb] pt-3">
         {!showDecline ? (
-          <button type="button" className="text-sm text-stone-500 underline" onClick={() => setShowDecline(true)}>Non sono interessata</button>
+          <button type="button" className="text-sm text-muted underline" onClick={() => setShowDecline(true)}>Non sono interessata</button>
         ) : (
           <form action={decline} onSubmit={submit(decline)} className="space-y-2">
             <label className="block">
               <span className="label">Vuoi dirci il motivo? (facoltativo)</span>
               <textarea className="input" name="reason" maxLength={1000} />
             </label>
-            {dec?.error && <p role="alert" className="text-sm text-red-700">{dec.error}</p>}
+            {dec?.error && <p role="alert" className="text-sm text-[#a4434a]">{dec.error}</p>}
             <Button variant="secondary" disabled={declining}>Rifiuta il preventivo</Button>
           </form>
         )}

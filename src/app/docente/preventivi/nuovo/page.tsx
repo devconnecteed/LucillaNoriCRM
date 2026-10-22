@@ -23,7 +23,7 @@ export default async function NewQuotePage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader title="Nuovo preventivo" subtitle="Le voci partono dal listino del corso: puoi modificarle, aggiungere extra e sconti."
+      <PageHeader eyebrow="Le proposte della tua scuola" title="Nuovo preventivo" subtitle="Le voci partono dal listino del corso: puoi modificarle, aggiungere extra e sconti."
         actions={<ButtonLink variant="secondary" href="/docente/preventivi">Annulla</ButtonLink>} />
       <QuoteBuilder
         action={saveQuote.bind(null, null)}

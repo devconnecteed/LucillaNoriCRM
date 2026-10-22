@@ -1,7 +1,7 @@
 import type { AnswerValue, Item } from "@/lib/questionnaire/types";
 import { isScoredItem } from "@/lib/questionnaire/logic";
 
-const none = <span className="font-normal italic text-stone-400">non risposto</span>;
+const none = <span className="font-normal italic text-[#aaa09d]">non risposto</span>;
 
 /** Rappresentazione testuale di una risposta. Usabile sia lato server che client. */
 export function AnswerDisplay({ item, value }: { item: Item; value: AnswerValue | undefined }) {
@@ -55,8 +55,8 @@ export function CorrectnessHint({ item, value }: { item: Item; value: AnswerValu
     correctLabel = item.options.filter((o) => c.includes(o.id)).map((o) => o.label).join(", ");
   }
   return ok ? (
-    <span className="text-xs font-medium text-emerald-700">✓ Corretta</span>
+    <span className="text-xs font-medium text-ok">✓ Corretta</span>
   ) : (
-    <span className="text-xs text-red-700">✗ Risposta corretta: {correctLabel}</span>
+    <span className="text-xs text-[#a4434a]">✗ Risposta corretta: {correctLabel}</span>
   );
 }
