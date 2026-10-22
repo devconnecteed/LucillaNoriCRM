@@ -1,26 +1,32 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Palette LN: rosa antico / bordeaux su avorio (dai modelli cartacei). */
+@theme {
+  --color-ln-50: #fdf6f7;
+  --color-ln-100: #f9e7ea;
+  --color-ln-200: #f1cdd4;
+  --color-ln-300: #e3a6b3;
+  --color-ln-400: #cf7489;
+  --color-ln-500: #b84d67;
+  --color-ln-600: #9c3652;
+  --color-ln-700: #822a44;
+  --color-ln-800: #6b263b;
+  --color-ln-900: #4a1a29;
+  --color-ivory: #fbf8f5;
+  --color-ink: #2f2a2b;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-ivory);
+  color: var(--color-ink);
+}
+
+/* Campi form coerenti in tutta l'app */
+.input {
+  @apply w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base text-ink shadow-sm outline-none transition focus:border-ln-500 focus:ring-2 focus:ring-ln-200 sm:text-sm;
+}
+.label {
+  @apply mb-1 block text-sm font-medium text-stone-700;
 }

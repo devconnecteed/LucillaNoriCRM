@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LN Stile e Portamento · Piattaforma corsi
 
-## Getting Started
+MVP (P0) della piattaforma descritta in `../Flusso_Piattaforma_LN_Portamento.pdf` (spec v1.0, 22/10/2026).
 
-First, run the development server:
+**Stack:** Next.js 15 (App Router, server actions) · TypeScript · Prisma · SQLite in sviluppo (Postgres in produzione) · Tailwind 4 · pdf-lib.
+
+## Avvio
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env          # imposta SESSION_SECRET (≥ 32 caratteri casuali)
+npx prisma migrate dev        # crea il DB ed esegue il seed
+npm run dev                   # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Utenti di prova (password `LnDemo2026!`, cambiabile con `SEED_PASSWORD`): `admin@ln.local`, `docente@ln.local`, `allieva.demo@ln.local`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Comando | |
+|---|---|
+| `npm test` | test unitari (punteggi, libreria modelli, protezione chiavi del quiz, confronti prima/dopo) |
+| `npm run typecheck` / `npm run lint` | controlli statici |
+| `npm run db:reset` | ricrea il DB locale da zero con il seed |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+In sviluppo le email (inviti, notifiche) vengono salvate nella tabella `Notification` e stampate in console; il link d'invito compare anche nella pagina dell'allieva.
 
-## Learn More
+## Copertura della specifica
 
-To learn more about Next.js, take a look at the following resources:
+| § | Ambito | Stato |
+|---|---|---|
+| 1–2 | Flusso end-to-end, ruoli Admin / Docente / Allieva | ✅ autorizzazioni server-side per record (`src/lib/guards.ts`) |
+| 3 | Anagrafiche: ricerca, filtri, duplicati email/telefono, campi Sposa, dati fisici riservati, minori + tutore, consensi, note docente | ✅ |
+| 4 | Tipologie corso configurabili, edizioni, lezioni, iscrizioni, presenze | ✅ |
+| 5 | Builder: 8 tipi di campo, sezioni, ordine, obbligatorietà, punteggi, anteprima mobile, versioni immutabili, duplicazione | ✅ (sezioni condizionali: non ancora) |
+| 6 | Libreria iniziale dai 7 allegati unici (`prisma/library.ts`), **solo struttura, senza i dati compilati** | ✅ |
+| 7 | Area allieva mobile: form a sezioni, progress bar, bozza, riepilogo, invio, dashboard | ✅ |
+| 8 | Punteggio automatico, revisione tracciata, pubblicazione separata, confronto prima/dopo per domande equivalenti | ✅ (report PDF: P1) |
+| 9 | Attestato PDF con verifica requisiti, override motivato, annullamento | ✅ (QR di verifica: P2) |
+| 10 | Dashboard e navigazione docente | ✅ |
+| 12 | Inviti scaduti/rinnovo, proroga, sollecito, riapertura, cambio email, revoca accesso | ✅ |
+| 13 | Audit log, cookie di sessione firmati, password hashate, token d'invito salvati solo come hash | ✅ base |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Scelte da validare (spec §16)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Ho applicato questi default, tutti modificabili:
+- **Corsi:** individuali e di gruppo, entrambi supportati.
+- **Accesso:** invito via email con link monouso valido 7 giorni e password scelta dall'allieva. OTP e WhatsApp non sono inclusi.
+- **Frequenza minima per l'attestato:** 80% di default, impostabile per edizione. L'override della docente è motivato e tracciato.
+- **Risultati:** non sono mai visibili all'allieva finché la docente non li pubblica, quiz compresi.
+- **Domande senza risposta nei quiz:** valgono 0 punti.
 
-## Deploy on Vercel
+### Concetti chiave
+- **Modello → Versione → Assegnazione → Risposta.** Una versione pubblicata non si modifica mai: per cambiare un modello si crea una nuova bozza e la si pubblica. Le compilazioni restano sempre legate alla loro versione.
+- **Confronti nel tempo.** Le domande a scala con la stessa chiave `dimension` vengono confrontate tra loro, per esempio `sposa_tacchi` nel test di arrivo e in quello di fine incontro. Le rubriche della docente stanno in righe separate dall'autovalutazione dell'allieva.
+- **Quiz.** Le risposte corrette vengono tolte dal contenuto prima di inviarlo al browser dell'allieva (`stripAnswerKey`).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Prima della produzione
+- Passare a Postgres: cambiare il `provider` in `prisma/schema.prisma` e il valore di `DATABASE_URL`.
+- Collegare un provider email con retry (`src/lib/notify.ts`).
+- Aggiungere un rate limit al login e un flusso "password dimenticata". Oggi la docente rimanda un invito, che funziona da reset.
+- Definire backup, conservazione dei dati e base giuridica per i dati fisici insieme al DPO (§13).
+- Branding definitivo, firma e testo dell'attestato (§16).
