@@ -76,7 +76,7 @@ export function AppShell({ groups, footer, children }: { groups: NavGroup[]; foo
   );
 }
 
-const SECTION_LABELS: Record<string, string> = {
+const LABELS: Record<string, string> = {
   allieve: "Allieve",
   corsi: "Percorsi e corsi",
   calendario: "Calendario",
@@ -87,19 +87,30 @@ const SECTION_LABELS: Record<string, string> = {
   attestati: "Attestati",
   preventivi: "Preventivi",
   cerca: "Ricerca",
+  tipologie: "Tipologie",
+  edizioni: "Edizioni",
+  nuova: "Nuova",
+  nuovo: "Nuovo",
+  assegna: "Assegna",
 };
-const SUB_LABELS: Record<string, string> = { nuova: "Nuova", nuovo: "Nuovo", assegna: "Assegna", tipologie: "Tipologie", edizioni: "Nuova edizione" };
+/** Segmenti senza una pagina propria: il link punta alla sezione che li contiene. */
+const HREF_ALIASES: Record<string, string> = {
+  "/docente/compilazioni": "/docente/valutazioni",
+  "/docente/compila": "/docente/valutazioni",
+  "/docente/corsi/tipologie": "/docente/corsi",
+  "/docente/corsi/edizioni": "/docente/corsi",
+};
 
-/** Breadcrumb di contesto ricavata dall'URL. */
+/** Breadcrumb di contesto ricavata dall'URL (fino a tre livelli: es. Percorsi e corsi › Preventivi › Dettaglio). */
 export function Breadcrumb() {
   const path = usePathname();
-  const [, , section, sub] = path.split("/");
+  const segments = path.split("/").slice(2).filter(Boolean);
   const crumbs: { label: string; href?: string }[] = [{ label: "LN Studio", href: "/docente" }];
-  if (!section) crumbs.push({ label: "Panoramica" });
-  else {
-    crumbs.push({ label: SECTION_LABELS[section] ?? section, href: sub ? `/docente/${section === "compilazioni" || section === "compila" ? "valutazioni" : section}` : undefined });
-    if (sub) crumbs.push({ label: SUB_LABELS[sub] ?? "Dettaglio" });
-  }
+  if (!segments.length) crumbs.push({ label: "Panoramica" });
+  segments.forEach((seg, i) => {
+    const href = `/docente/${segments.slice(0, i + 1).join("/")}`;
+    crumbs.push({ label: LABELS[seg] ?? "Dettaglio", href: HREF_ALIASES[href] ?? href });
+  });
   return (
     <nav aria-label="Percorso" className="flex min-w-0 items-center gap-2.5 text-xs text-[#938987]">
       {crumbs.map((c, i) => (

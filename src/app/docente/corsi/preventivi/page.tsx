@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/auth";
 import { QUOTE_STATUS_LABELS, euro, quoteEffectiveStatus } from "@/lib/quote";
+import { CoursesTabs } from "@/components/courses-tabs";
 import { Badge, ButtonLink, Empty, FilterChips, PageHeader, Stat, Table, Td, fmtDate, statusTone } from "@/components/ui";
 
 export const metadata = { title: "Preventivi" };
@@ -32,12 +33,13 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <PageHeader eyebrow="Le proposte della tua scuola" title="Preventivi" subtitle="Offerte su misura, invio digitale e monitoraggio dello stato di accettazione."
-        actions={<ButtonLink icon="plus" href="/docente/preventivi/nuovo">Nuovo preventivo</ButtonLink>} />
+      <PageHeader eyebrow="Percorsi e corsi" title="Preventivi" subtitle="Offerte su misura, invio digitale e monitoraggio dello stato di accettazione."
+        actions={<ButtonLink icon="plus" href="/docente/corsi/preventivi/nuovo">Nuovo preventivo</ButtonLink>} />
+      <CoursesTabs user={user} active="preventivi" />
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3 sm:gap-4">
-        <Stat label="In attesa" value={String(waiting.length).padStart(2, "0")} hint="Inviati alla potenziale allieva" href="/docente/preventivi?stato=SENT" />
-        <Stat label="Accettati" value={String(accepted.length).padStart(2, "0")} hint={toStart ? `${toStart} da avviare come percorso` : "Quest’anno"} hintTone={toStart ? "wine" : "ok"} href="/docente/preventivi?stato=ACCEPTED" />
+        <Stat label="In attesa" value={String(waiting.length).padStart(2, "0")} hint="Inviati alla potenziale allieva" href="/docente/corsi/preventivi?stato=SENT" />
+        <Stat label="Accettati" value={String(accepted.length).padStart(2, "0")} hint={toStart ? `${toStart} da avviare come percorso` : "Quest’anno"} hintTone={toStart ? "wine" : "ok"} href="/docente/corsi/preventivi?stato=ACCEPTED" />
         <Stat label="Valore proposte" value={euro(proposed).replace(",00", "")} hint="Inviati e accettati quest’anno" hintTone="muted" />
       </div>
 
@@ -58,12 +60,12 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
                   <Badge tone={statusTone(st)}>{QUOTE_STATUS_LABELS[st]}</Badge>
                   {st === "ACCEPTED" && !q.editionId && <span className="block pt-1 text-[11px] text-wine">da avviare</span>}
                 </Td>
-                <Td className="text-right"><ButtonLink size="sm" variant="secondary" href={`/docente/preventivi/${q.id}`}>Apri</ButtonLink></Td>
+                <Td className="text-right"><ButtonLink size="sm" variant="secondary" href={`/docente/corsi/preventivi/${q.id}`}>Apri</ButtonLink></Td>
               </tr>
             );
           })}
         </Table>
-      ) : <Empty icon="file">Nessun preventivo. <Link className="text-wine underline" href="/docente/preventivi/nuovo">Creane uno</Link> partendo dal listino di un corso.</Empty>}
+      ) : <Empty icon="file">Nessun preventivo. <Link className="text-wine underline" href="/docente/corsi/preventivi/nuovo">Creane uno</Link> partendo dal listino di un corso.</Empty>}
     </>
   );
 }

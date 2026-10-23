@@ -85,7 +85,7 @@ export async function saveQuote(id: string | null, _: ActionState, form: FormDat
     quoteId = q.id;
   }
   await audit(user.id, id ? "quote.update" : "quote.create", "Quote", quoteId);
-  redirect(`/docente/preventivi/${quoteId}`);
+  redirect(`/docente/corsi/preventivi/${quoteId}`);
 }
 
 /** Invia (o reinvia) il preventivo con un nuovo link monouso; il link precedente smette di funzionare. */
@@ -94,6 +94,7 @@ export async function sendQuote(id: string, _?: ActionState): Promise<ActionStat
   const q = await getQuoteForStaff(user, id);
   if (!["DRAFT", "SENT"].includes(q.status)) return { error: "Questo preventivo non può essere inviato." };
   if (quoteEffectiveStatus({ ...q, status: "SENT" }) === "EXPIRED") return { error: "La validità è già scaduta: aggiornala prima di inviare." };
+  if (q.totalCents <= 0) return { error: "Il totale è 0 €: imposta i prezzi (listino del corso o voci del preventivo) prima di inviarlo." };
 
   const token = randomBytes(32).toString("base64url");
   await db.quote.update({ where: { id }, data: { status: "SENT", tokenHash: hashToken(token), sentAt: new Date() } });
@@ -106,7 +107,7 @@ export async function sendQuote(id: string, _?: ActionState): Promise<ActionStat
       `Puoi consultarlo e accettarlo da qui:\n${link}\n\nPer qualsiasi domanda rispondi pure a questa email.\n\nA presto!\n${user.name}`,
   );
   await audit(user.id, "quote.send", "Quote", id);
-  revalidatePath(`/docente/preventivi/${id}`);
+  revalidatePath(`/docente/corsi/preventivi/${id}`);
   return { ok: `Preventivo inviato a ${q.prospectEmail}.`, link: process.env.NODE_ENV !== "production" ? link : undefined };
 }
 
@@ -116,7 +117,7 @@ export async function cancelQuote(id: string) {
   if (!["DRAFT", "SENT"].includes(q.status)) return;
   await db.quote.update({ where: { id }, data: { status: "CANCELLED", tokenHash: null } });
   await audit(user.id, "quote.cancel", "Quote", id);
-  revalidatePath(`/docente/preventivi/${id}`);
+  revalidatePath(`/docente/corsi/preventivi/${id}`);
 }
 
 /** Preventivo accettato → crea l'edizione individuale con le lezioni previste e iscrive l'allieva. */
@@ -185,9 +186,10 @@ export async function acceptQuote(token: string, _: ActionState, form: FormData)
     data: { status: "ACCEPTED", acceptedAt: new Date(), acceptedName: name, acceptedIp: ip, studentId },
   });
   await audit(null, "quote.accept", "Quote", q.id, { name, ip });
+  revalidatePath(`/preventivo/${token}`);
 
   await sendEmail(q.teacher.email, `Preventivo ${q.number} accettato`,
-    `${name} ha accettato il preventivo ${q.number} (${q.courseType.title}, ${euro(q.totalCents)}).\nAvvia il percorso: ${appUrl()}/docente/preventivi/${q.id}`);
+    `${name} ha accettato il preventivo ${q.number} (${q.courseType.title}, ${euro(q.totalCents)}).\nAvvia il percorso: ${appUrl()}/docente/corsi/preventivi/${q.id}`);
   await sendEmail(q.prospectEmail, `Conferma: preventivo ${q.number} accettato`,
     `Ciao ${q.prospectFirstName},\n\ngrazie! Abbiamo registrato l’accettazione del preventivo ${q.number} per “${q.courseType.title}”.\nTi contatterò a breve per fissare le lezioni e ti invierò l’accesso alla tua area riservata.\n\n${q.teacher.name}`);
   return { ok: "accepted" };
@@ -199,6 +201,7 @@ export async function declineQuote(token: string, _: ActionState, form: FormData
   const reason = String(form.get("reason") ?? "").trim().slice(0, 1000) || null;
   await db.quote.update({ where: { id: q.id }, data: { status: "DECLINED", declinedAt: new Date(), declineReason: reason } });
   await audit(null, "quote.decline", "Quote", q.id);
+  revalidatePath(`/preventivo/${token}`);
   await sendEmail(q.teacher.email, `Preventivo ${q.number} rifiutato`,
     `${q.prospectFirstName} ${q.prospectLastName} ha rifiutato il preventivo ${q.number}.${reason ? `\nMotivo: ${reason}` : ""}`);
   return { ok: "declined" };

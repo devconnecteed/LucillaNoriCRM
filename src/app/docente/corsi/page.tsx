@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireStaff, editionScope } from "@/lib/auth";
 import { EDITION_STATUS_LABELS } from "@/lib/constants";
 import { euro } from "@/lib/quote";
+import { CoursesTabs } from "@/components/courses-tabs";
 import { Icon, type IconName } from "@/components/icons";
 import { Badge, ButtonLink, Empty, PageHeader, SectionHead, Table, Td, fmtDate, statusTone } from "@/components/ui";
 
@@ -30,9 +31,10 @@ export default async function CoursesPage() {
       <PageHeader eyebrow="Catalogo della scuola" title="Percorsi su misura"
         subtitle="Le tipologie definiscono il metodo; le edizioni gestiscono date, durata, iscrizioni e presenze."
         actions={<>
-          <ButtonLink variant="secondary" icon="file" href="/docente/preventivi/nuovo">Crea preventivo</ButtonLink>
+          <ButtonLink variant="secondary" icon="file" href="/docente/corsi/preventivi/nuovo">Crea preventivo</ButtonLink>
           <ButtonLink icon="plus" href="/docente/corsi/tipologie/nuova">Crea un corso</ButtonLink>
         </>} />
+      <CoursesTabs user={user} active="catalogo" />
 
       <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {types.map((t, i) => {
@@ -53,7 +55,7 @@ export default async function CoursesPage() {
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <ButtonLink size="sm" variant="secondary" href={`/docente/corsi/tipologie/${t.id}`}>Configura percorso →</ButtonLink>
-                {!archived && <ButtonLink size="sm" variant="ghost" href={`/docente/preventivi/nuovo?corso=${t.id}`}>Preventivo</ButtonLink>}
+                {!archived && <ButtonLink size="sm" variant="ghost" href={`/docente/corsi/preventivi/nuovo?corso=${t.id}`}>Preventivo</ButtonLink>}
               </div>
             </article>
           );

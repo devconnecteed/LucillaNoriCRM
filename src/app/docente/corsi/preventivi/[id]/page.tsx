@@ -29,7 +29,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
     ]);
     return (
       <>
-        <PageHeader eyebrow="Le proposte della tua scuola" title={`Modifica ${q.number}`} actions={<ButtonLink variant="secondary" href={`/docente/preventivi/${id}`}>Annulla</ButtonLink>} />
+        <PageHeader eyebrow="Percorsi e corsi · Preventivi" title={`Modifica ${q.number}`} actions={<ButtonLink variant="secondary" href={`/docente/corsi/preventivi/${id}`}>Annulla</ButtonLink>} />
         <QuoteBuilder action={saveQuote.bind(null, id)} courses={courses}
           students={students.map(({ id, firstName, lastName, email, phone }) => ({ id, firstName, lastName, email, phone }))}
           initial={{
@@ -53,10 +53,10 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   return (
     <>
       <PageHeader
-        eyebrow="Le proposte della tua scuola"
+        eyebrow="Percorsi e corsi · Preventivi"
         title={`Preventivo ${q.number}`}
         subtitle={<span className="flex items-center gap-2">{q.prospectFirstName} {q.prospectLastName} <Badge tone={st === "ACCEPTED" ? "green" : st === "SENT" ? "blue" : statusTone(st)}>{QUOTE_STATUS_LABELS[st]}</Badge></span>}
-        actions={<ButtonLink variant="secondary" href="/docente/preventivi">← Preventivi</ButtonLink>}
+        actions={<ButtonLink variant="secondary" href="/docente/corsi/preventivi">← Preventivi</ButtonLink>}
       />
       <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
         <QuoteDocument quote={q} teacherName={q.teacher.name} />
@@ -65,6 +65,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
           <Card className="space-y-3">
             <h2 className="font-serif text-[22px] text-wine-dark">Azioni</h2>
             {q.status === "DRAFT" && <p className="text-sm text-muted">Controlla il preventivo: all’invio l’allieva riceve un’email con il link per accettarlo.</p>}
+            {q.status === "DRAFT" && q.totalCents <= 0 && <p className="callout !text-[13px]">Il totale è 0 €: modifica le voci o imposta il listino del corso prima di inviarlo.</p>}
             {st === "SENT" && <p className="text-sm text-muted">In attesa di risposta da {q.prospectEmail}. Reinviando, il link precedente smette di funzionare.</p>}
             {st === "EXPIRED" && <p className="text-sm text-muted">La validità è scaduta: il link non è più accettabile.</p>}
             {/* Un solo form in posizione fissa: l'esito dell'invio resta visibile anche dopo il passaggio Bozza → Inviato */}
@@ -75,7 +76,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
                 </Button>
               </ActionForm>
             )}
-            {q.status === "DRAFT" && <ButtonLink variant="secondary" className="w-full" href={`/docente/preventivi/${id}?modifica=1`}>Modifica</ButtonLink>}
+            {q.status === "DRAFT" && <ButtonLink variant="secondary" className="w-full" href={`/docente/corsi/preventivi/${id}?modifica=1`}>Modifica</ButtonLink>}
             {q.status === "ACCEPTED" && (
               q.editionId
                 ? <ButtonLink className="w-full" href={`/docente/corsi/${q.editionId}`}>Vai al percorso</ButtonLink>

@@ -32,7 +32,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       { title: "Allieve", icon: "users" as const, hits: students.map((s) => ({ href: `/docente/allieve/${s.id}`, title: `${s.firstName} ${s.lastName}`, detail: s.email })) },
       { title: "Percorsi", icon: "book" as const, hits: editions.map((e) => ({ href: `/docente/corsi/${e.id}`, title: e.title, detail: e.courseType.title })) },
       { title: "Questionari", icon: "clipboard" as const, hits: templates.map((t) => ({ href: `/docente/questionari/${t.id}`, title: t.title, detail: t.courseType?.title ?? "Tutti i corsi" })) },
-      { title: "Preventivi", icon: "file" as const, hits: quotes.map((x) => ({ href: `/docente/preventivi/${x.id}`, title: `${x.number} · ${x.prospectFirstName} ${x.prospectLastName}`, detail: `${x.courseType.title} · ${euro(x.totalCents)}` })) },
+      { title: "Preventivi", icon: "file" as const, hits: quotes.map((x) => ({ href: `/docente/corsi/preventivi/${x.id}`, title: `${x.number} · ${x.prospectFirstName} ${x.prospectLastName}`, detail: `${x.courseType.title} · ${euro(x.totalCents)}` })) },
     ].filter((g) => g.hits.length);
   }
 

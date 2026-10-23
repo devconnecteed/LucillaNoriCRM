@@ -85,7 +85,7 @@ export default async function StudentDossier({ params, searchParams }: { params:
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <ButtonLink variant="secondary" icon="file" href={`/docente/preventivi/nuovo?allieva=${id}`}>Preventivo</ButtonLink>
+          <ButtonLink variant="secondary" icon="file" href={`/docente/corsi/preventivi/nuovo?allieva=${id}`}>Preventivo</ButtonLink>
           <ButtonLink icon="send" href={`/docente/valutazioni/assegna?allieva=${id}`}>Assegna questionario</ButtonLink>
         </div>
       </div>
@@ -194,14 +194,14 @@ export default async function StudentDossier({ params, searchParams }: { params:
             ) : <Empty icon="award">Nessun attestato emesso.</Empty>}
           </Card>
           <Card>
-            <PanelTitle title="Preventivi" action={<Link href={`/docente/preventivi/nuovo?allieva=${id}`}>+ Nuovo</Link>} />
+            <PanelTitle title="Preventivi" action={<Link href={`/docente/corsi/preventivi/nuovo?allieva=${id}`}>+ Nuovo</Link>} />
             {student.quotes.length ? (
               <ul className="divide-y divide-[#f2edeb]">
                 {student.quotes.map((q) => {
                   const st = quoteEffectiveStatus(q);
                   return (
                     <li key={q.id}>
-                      <Link href={`/docente/preventivi/${q.id}`} className="flex items-center justify-between gap-3 py-3 text-[13px] hover:text-wine">
+                      <Link href={`/docente/corsi/preventivi/${q.id}`} className="flex items-center justify-between gap-3 py-3 text-[13px] hover:text-wine">
                         <span><b className="font-mono text-xs">{q.number}</b> · {q.courseType.title}<span className="block text-xs text-muted">{euro(q.totalCents)}</span></span>
                         <Badge tone={statusTone(st)}>{QUOTE_STATUS_LABELS[st]}</Badge>
                       </Link>

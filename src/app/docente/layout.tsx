@@ -20,7 +20,8 @@ export default async function TeacherLayout({ children }: { children: React.Reac
       items: [
         { href: "/docente", label: "Panoramica", icon: "dashboard" },
         { href: "/docente/allieve", label: "Allieve", icon: "users" },
-        { href: "/docente/corsi", label: "Percorsi e corsi", icon: "book" },
+        // Include i preventivi (tab interno): il contatore segnala quelli accettati da avviare
+        { href: "/docente/corsi", label: "Percorsi e corsi", icon: "book", count: acceptedQuotes },
         { href: "/docente/calendario", label: "Calendario", icon: "calendar" },
       ],
     },
@@ -31,10 +32,6 @@ export default async function TeacherLayout({ children }: { children: React.Reac
         { href: "/docente/valutazioni", label: "Valutazioni", icon: "chart", count: toReview },
         { href: "/docente/attestati", label: "Attestati", icon: "award" },
       ],
-    },
-    {
-      caption: "Amministrazione",
-      items: [{ href: "/docente/preventivi", label: "Preventivi", icon: "file", count: acceptedQuotes }],
     },
   ];
 

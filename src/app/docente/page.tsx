@@ -141,7 +141,7 @@ export default async function Dashboard() {
                   time={toReview[0].submittedAt ? relativeDay(toReview[0].submittedAt) : undefined} />
               )}
               {quotesAccepted.length > 0 && (
-                <ActivityItem icon="euro" href={`/docente/preventivi/${quotesAccepted[0].id}`}
+                <ActivityItem icon="euro" href={`/docente/corsi/preventivi/${quotesAccepted[0].id}`}
                   title={`${plural(quotesAccepted.length, "preventivo accettato", "preventivi accettati")} da avviare`}
                   text={quotesAccepted.map((q) => `${q.prospectFirstName} ${q.prospectLastName}`).join(", ")}
                   time={quotesAccepted[0].acceptedAt ? relativeDay(quotesAccepted[0].acceptedAt) : undefined} />
@@ -152,7 +152,7 @@ export default async function Dashboard() {
                   text="Controlla frequenza e completamento per l’attestato." />
               )}
               {quotesSent.length > 0 && (
-                <ActivityItem icon="file" href="/docente/preventivi?stato=SENT"
+                <ActivityItem icon="file" href="/docente/corsi/preventivi?stato=SENT"
                   title={`${plural(quotesSent.length, "preventivo", "preventivi")} da confermare`}
                   text={`Inviati e in attesa di accettazione · ${euro(quotesSent.reduce((s, q) => s + q.totalCents, 0))}`}
                   time={quotesSent[0].sentAt ? relativeDay(quotesSent[0].sentAt) : undefined} />

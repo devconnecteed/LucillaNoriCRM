@@ -123,7 +123,7 @@ export function Empty({ children, icon }: { children: ReactNode; icon?: IconName
   return (
     <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-[#e0d3cf] bg-[#faf8f7] px-5 py-8 text-center text-[13px] text-muted">
       {icon && <Icon name={icon} className="h-6 w-6 text-ln-400" />}
-      {children}
+      <div>{children}</div>
     </div>
   );
 }
