@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { getStudentForStaff, requireStaff, requireUser } from "@/lib/auth";
 import { getEditionForStaff } from "@/lib/guards";
 import { audit } from "@/lib/audit";
+import { notifyLessonScheduled } from "@/lib/lesson-calendar";
 import { ROLES } from "@/lib/constants";
 import { parseEuro } from "@/lib/quote";
 import type { ActionState } from "./students";
@@ -114,20 +115,67 @@ export async function addLesson(editionId: string) {
   revalidatePath(`/docente/corsi/${editionId}`);
 }
 
+/**
+ * Salva data/ora, durata, argomento e luogo di una lezione. Se data o ora cambiano su una lezione
+ * futura incrementa la SEQUENCE (i calendari aggiornano l'evento) e, se richiesto, avvisa docente e allieve.
+ */
+async function saveLessonSchedule(lessonId: string, data: { date: Date | null; durationMin: number; topic: string | null; location: string | null }, notify: boolean) {
+  const before = await db.lesson.findUniqueOrThrow({ where: { id: lessonId } });
+  const timeChanged = (before.date?.getTime() ?? null) !== (data.date?.getTime() ?? null) || before.durationMin !== data.durationMin;
+  await db.lesson.update({
+    where: { id: lessonId },
+    data: { ...data, sequence: timeChanged && before.date ? { increment: 1 } : undefined },
+  });
+  let sent = 0;
+  const changedForPeople = timeChanged || before.location !== data.location;
+  if (notify && data.date && data.date > new Date() && (changedForPeople || !before.notifiedAt)) {
+    ({ sent } = await notifyLessonScheduled(lessonId, before.date && before.notifiedAt ? "spostata" : "nuova"));
+  }
+  return { sent, timeChanged };
+}
+
+const readLessonForm = (form: FormData, fallbackDuration: number) => ({
+  // datetime-local ("2026-10-26T10:30") viene interpretato nell'ora locale del server
+  date: form.get("date") ? new Date(String(form.get("date"))) : null,
+  topic: String(form.get("topic") ?? "").trim() || null,
+  location: String(form.get("location") ?? "").trim() || null,
+  durationMin: Math.max(15, Number(form.get("durationMin") || fallbackDuration)),
+});
+
 export async function updateLesson(lessonId: string, form: FormData) {
   const user = await requireStaff();
   const lesson = await db.lesson.findUniqueOrThrow({ where: { id: lessonId } });
   await getEditionForStaff(user, lesson.editionId);
-  await db.lesson.update({
-    where: { id: lessonId },
-    data: {
-      // datetime-local ("2026-10-26T10:30") viene interpretato nell'ora locale del server
-      date: form.get("date") ? new Date(String(form.get("date"))) : null,
-      topic: String(form.get("topic") ?? "").trim() || null,
-      durationMin: Math.max(0, Number(form.get("durationMin") || lesson.durationMin)),
-    },
-  });
+  const { sent } = await saveLessonSchedule(lessonId, readLessonForm(form, lesson.durationMin), form.get("notify") === "on");
+  await audit(user.id, "lesson.update", "Lesson", lessonId, { notified: sent });
   revalidatePath(`/docente/corsi/${lesson.editionId}`);
+  revalidatePath("/docente/calendario");
+}
+
+/** "Pianifica lezione" dal calendario: fissa una lezione esistente o ne aggiunge una nuova all'edizione. */
+export async function planLesson(_: ActionState, form: FormData): Promise<ActionState> {
+  const user = await requireStaff();
+  const editionId = String(form.get("editionId") ?? "");
+  const edition = await getEditionForStaff(user, editionId);
+  if (["COMPLETED", "CANCELLED"].includes(edition.status)) return { error: "L’edizione è chiusa: riaprila per pianificare nuove lezioni." };
+  const data = readLessonForm(form, 60);
+  if (!data.date || Number.isNaN(+data.date)) return { error: "Indica data e ora della lezione." };
+
+  let lessonId = String(form.get("lessonId") || "");
+  if (lessonId === "new" || !lessonId) {
+    const last = await db.lesson.findFirst({ where: { editionId }, orderBy: { number: "desc" } });
+    lessonId = (await db.lesson.create({ data: { editionId, number: (last?.number ?? 0) + 1, durationMin: data.durationMin } })).id;
+  } else if (!(await db.lesson.findFirst({ where: { id: lessonId, editionId } }))) {
+    return { error: "Lezione non trovata in questa edizione." };
+  }
+  const { sent } = await saveLessonSchedule(lessonId, data, form.get("notify") === "on");
+  await audit(user.id, "lesson.plan", "Lesson", lessonId, { notified: sent });
+  revalidatePath("/docente/calendario");
+  revalidatePath(`/docente/corsi/${editionId}`);
+  const d = data.date;
+  const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const day = `${month}-${String(d.getDate()).padStart(2, "0")}`;
+  redirect(`/docente/calendario?mese=${month}&giorno=${day}&pianificata=${sent}`);
 }
 
 /** Iscrizione: il form contiene editionId e studentId (usato da dossier allieva e pagina edizione). */

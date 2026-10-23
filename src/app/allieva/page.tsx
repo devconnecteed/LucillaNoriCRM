@@ -7,6 +7,9 @@ import { dayAndDate, relativeDay } from "@/lib/dates";
 import { ENROLLMENT_STATUS_LABELS } from "@/lib/constants";
 import { Icon } from "@/components/icons";
 import { ProgressTable } from "@/components/progress-table";
+import { AddToCalendar } from "@/components/add-to-calendar";
+import { SubscribeCalendar } from "@/components/subscribe-calendar";
+import { feedUrls, lessonCalendarLinks } from "@/lib/lesson-calendar";
 import { Badge, Card, DateBox, Empty, PanelTitle, fmtDate, fmtTime, statusTone } from "@/components/ui";
 
 export const metadata = { title: "La mia area" };
@@ -20,7 +23,7 @@ export default async function StudentHome() {
     db.enrollment.findMany({
       where: { studentId },
       include: {
-        edition: { include: { courseType: true, lessons: { orderBy: { number: "asc" } } } },
+        edition: { include: { courseType: true, teacher: true, lessons: { orderBy: { number: "asc" } } } },
         attendances: true,
         certificates: { where: { revokedAt: null } },
         assignments: {
@@ -98,18 +101,24 @@ export default async function StudentHome() {
         <Card>
           <PanelTitle title="Prossimi incontri" />
           <ul>
-            {enrollments.flatMap((e) => e.edition.lessons.filter((l) => l.date && l.date >= now).map((l) => ({ ...l, course: e.edition.courseType.title })))
+            {enrollments.flatMap((e) => e.edition.lessons.filter((l) => l.date && l.date >= now).map((l) => ({ ...l, course: e.edition.courseType.title, edition: e.edition })))
               .sort((a, b) => +a.date! - +b.date!).slice(0, 3).map((l) => (
                 <li key={l.id} className="flex items-center gap-3.5 border-b border-[#f2edeb] py-3 last:border-b-0">
                   <DateBox date={l.date!} />
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] font-semibold">{fmtTime(l.date) ? `${fmtTime(l.date)} — ` : ""}{l.topic || `Lezione ${l.number}`}</div>
-                    <div className="text-xs text-muted">{l.course} · lezione {l.number}</div>
+                    <div className="text-xs text-muted">{l.course} · lezione {l.number}{l.location && ` · ${l.location}`}</div>
                   </div>
-                  <Badge tone={["Oggi", "Domani"].includes(relativeDay(l.date!)) ? "pink" : "neutral"}>{relativeDay(l.date!)}</Badge>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <Badge tone={["Oggi", "Domani"].includes(relativeDay(l.date!)) ? "pink" : "neutral"}>{relativeDay(l.date!)}</Badge>
+                    <AddToCalendar compact links={lessonCalendarLinks(l)} />
+                  </div>
                 </li>
               ))}
           </ul>
+          <div className="mt-4 border-t border-[#f2edeb] pt-4">
+            <SubscribeCalendar urls={feedUrls(user.id)} label="Sincronizza con il mio calendario" align="left" />
+          </div>
         </Card>
       )}
 

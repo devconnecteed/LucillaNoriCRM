@@ -145,6 +145,10 @@ model Lesson {
   date        DateTime?
   topic       String?
   durationMin Int           @default(60)
+  location    String?
+  // Incrementato a ogni modifica di data/ora: i calendari (ICS SEQUENCE) aggiornano l'evento invece di duplicarlo
+  sequence    Int           @default(0)
+  notifiedAt  DateTime?
 
   attendances Attendance[]
   assignments Assignment[]

@@ -6,6 +6,8 @@ import { relativeDay } from "@/lib/dates";
 import { EDITION_STATUS_LABELS, ENROLLMENT_STATUS_LABELS } from "@/lib/constants";
 import { addLesson, enrollStudent, saveAttendance, setEnrollmentStatus, updateEdition, updateLesson } from "@/server/courses";
 import { ActionForm } from "@/components/action-form";
+import { AddToCalendar } from "@/components/add-to-calendar";
+import { lessonCalendarLinks } from "@/lib/lesson-calendar";
 import { Badge, Button, ButtonLink, Card, DateBox, Empty, Field, Initials, PageHeader, PanelTitle, statusTone } from "@/components/ui";
 
 const toDateInput = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
@@ -58,11 +60,17 @@ export default async function EditionPage({ params }: { params: Promise<{ id: st
                   <li key={l.id} className="rounded-xl border border-line p-4">
                     <div className="flex items-start gap-3.5">
                       {l.date ? <DateBox date={l.date} /> : <div className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-lg border border-dashed border-[#e0d3cf] font-serif text-xl text-muted">{l.number}</div>}
-                      <form key={`${l.date?.getTime()}-${l.topic}-${l.durationMin}`} action={updateLesson.bind(null, l.id)} className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[1fr_190px_90px_auto] sm:items-end">
+                      <form key={`${l.date?.getTime()}-${l.topic}-${l.durationMin}-${l.location}`} action={updateLesson.bind(null, l.id)} className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[1fr_190px_90px] sm:items-end">
                         <Field label={`Lezione ${l.number} · argomento`}><input className="input" name="topic" defaultValue={l.topic ?? ""} placeholder="Es. Postura e camminata" /></Field>
                         <Field label="Data e ora"><input className="input" type="datetime-local" name="date" defaultValue={toLocalInput(l.date)} /></Field>
-                        <Field label="Minuti"><input className="input" type="number" min={0} name="durationMin" defaultValue={l.durationMin} /></Field>
-                        <Button size="sm" variant="ghost">Salva</Button>
+                        <Field label="Minuti"><input className="input" type="number" min={15} step={15} name="durationMin" defaultValue={l.durationMin} /></Field>
+                        <Field label="Luogo" className="sm:col-span-2"><input className="input" name="location" defaultValue={l.location ?? ""} placeholder="Es. Studio LN" /></Field>
+                        <div className="flex items-center justify-between gap-2 sm:justify-end">
+                          <label className="flex items-center gap-1.5 text-xs text-muted" title="Invia email con l’invito calendario a docente e allieve se data, ora o luogo cambiano">
+                            <input type="checkbox" name="notify" defaultChecked className="h-3.5 w-3.5 accent-[var(--color-wine)]" /> Avvisa
+                          </label>
+                          <Button size="sm" variant="ghost">Salva</Button>
+                        </div>
                       </form>
                     </div>
                     {edition.enrollments.length > 0 && (
@@ -78,7 +86,8 @@ export default async function EditionPage({ params }: { params: Promise<{ id: st
                             </label>
                           );
                         })}
-                        <span className="ml-auto flex items-center gap-2">
+                        <span className="ml-auto flex flex-wrap items-center gap-2">
+                          <AddToCalendar compact links={lessonCalendarLinks({ ...l, edition })} />
                           {l.attendances.length > 0 ? <Badge tone="green">Registrate</Badge> : past ? <Badge tone="amber">Da registrare</Badge> : l.date ? <Badge>{relativeDay(l.date)}</Badge> : null}
                           <Button size="sm" variant="secondary">Registra presenze</Button>
                           <ButtonLink size="sm" variant="soft" href={`/docente/valutazioni/assegna?edizione=${id}&lezione=${l.id}`}>Valuta lezione</ButtonLink>

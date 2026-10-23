@@ -92,6 +92,7 @@ const LABELS: Record<string, string> = {
   nuova: "Nuova",
   nuovo: "Nuovo",
   assegna: "Assegna",
+  pianifica: "Pianifica lezione",
 };
 /** Segmenti senza una pagina propria: il link punta alla sezione che li contiene. */
 const HREF_ALIASES: Record<string, string> = {
