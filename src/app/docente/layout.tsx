@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/auth";
 import { enrollmentWhereForStaff } from "@/lib/guards";
+import { emailConfigured } from "@/lib/notify";
 import { logout } from "@/app/auth-actions";
 import { AppShell, Breadcrumb, type NavGroup } from "@/components/nav";
 import { Icon } from "@/components/icons";
@@ -65,6 +66,11 @@ export default async function TeacherLayout({ children }: { children: React.Reac
           <span className="text-[11px] capitalize text-muted">{today}</span>
         </div>
       </header>
+      {!emailConfigured() && process.env.NODE_ENV === "production" && (
+        <div role="alert" className="border-b border-[#f1dfbf] bg-warn-bg px-4 py-2.5 text-center text-[13px] text-warn sm:px-8">
+          <b>Invio email non configurato:</b> inviti, preventivi e avvisi delle lezioni vengono registrati ma non recapitati. Contatta l’assistenza tecnica.
+        </div>
+      )}
       <main className="view-in mx-auto max-w-[1550px] px-4 pb-16 pt-6 sm:px-7 lg:px-8 lg:pt-10 xl:px-12">{children}</main>
     </AppShell>
   );

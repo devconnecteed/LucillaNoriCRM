@@ -44,3 +44,7 @@ next-env.d.ts
 # database locale
 prisma/*.db
 prisma/*.db-journal
+
+# build di collaudo
+/.next-prod/
+prisma/collaudo*.db

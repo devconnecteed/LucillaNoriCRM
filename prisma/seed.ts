@@ -17,6 +17,9 @@ function lessonDate(n: number) {
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "LnDemo2026!";
 
 async function main() {
+  // Gli utenti demo hanno una password nota: mai in produzione (usare scripts/crea-utente.ts)
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "1")
+    throw new Error("Seed demo bloccato in produzione. Per creare utenti reali: npx tsx scripts/crea-utente.ts");
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
 
   const admin = await db.user.upsert({

@@ -1,21 +1,34 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { endSession, hashToken, homeFor, startSession } from "@/lib/auth";
 import { audit } from "@/lib/audit";
+import { clearFailures, rateLimited, recordFailure } from "@/lib/rate-limit";
 
 export type FormState = { error?: string; ok?: string } | undefined;
+
+const LOGIN_WINDOW = 15 * 60_000;
 
 export async function login(_: FormState, form: FormData): Promise<FormState> {
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const password = String(form.get("password") ?? "");
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() || "local";
+  const keys = [`login:${email}`, `login-ip:${ip}`];
+  const blocked = [rateLimited(keys[0], 5), rateLimited(keys[1], 20)].find((r) => r.limited);
+  if (blocked) return { error: `Troppi tentativi non riusciti. Riprova tra ${Math.ceil(blocked.retryInMs / 60_000)} minuti.` };
+
   const user = await db.user.findUnique({ where: { email } });
   // Stesso messaggio in tutti i casi per non rivelare quali email esistono.
-  if (!user || !user.active || !user.passwordHash || !(await bcrypt.compare(password, user.passwordHash)))
+  if (!user || !user.active || !user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+    keys.forEach((k) => recordFailure(k, LOGIN_WINDOW));
+    await audit(user?.id ?? null, "login.failed", "User", user?.id ?? null, { email });
     return { error: "Email o password non corretti." };
+  }
+  clearFailures(keys[0]);
   await startSession(user.id, user.role);
   await audit(user.id, "login", "User", user.id);
   redirect(homeFor(user.role));

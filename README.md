@@ -64,9 +64,31 @@ L'interfaccia segue il pacchetto `../LN_Studio_Pacchetto_UIUX` (tavole e prototi
   - i moduli lunghi (anagrafica, corso, edizione, assegnazione) sono pagine dedicate invece di finestre modali, perché si leggono meglio, hanno un link proprio e funzionano su mobile;
   - è stata aggiunta la pagina **Calendario**, con la vista settimanale e "Valuta lezione".
 
-## Prima della produzione
-- Passare a Postgres: cambiare il `provider` in `prisma/schema.prisma` e il valore di `DATABASE_URL`.
-- Collegare un provider email con retry (`src/lib/notify.ts`).
-- Aggiungere un rate limit al login e un flusso "password dimenticata". Oggi la docente rimanda un invito, che funziona da reset.
-- Definire backup, conservazione dei dati e base giuridica per i dati fisici insieme al DPO (§13).
+## Messa in produzione
+
+### Già pronto (verificato nel collaudo del 26/10/2026 su build di produzione)
+- Permessi: `scripts/collaudo/permessi.ts` prova 40 pagine e API con 6 utenze (anonimo, 2 allieve, 2 docenti, admin). Esito: 240 verifiche su 240.
+- Intestazioni di sicurezza attive: CSP, HSTS, X-Frame-Options, Referrer-Policy, nosniff; `X-Powered-By` disattivato.
+- Login: massimo 5 tentativi falliti per email e 20 per IP ogni 15 minuti; i tentativi falliti finiscono nel registro operazioni.
+- Email: invio reale via SMTP con 3 tentativi e allegati (inviti calendario `.ics`). Senza `SMTP_URL`, in produzione le email non vengono segnate come inviate e la docente vede un avviso.
+
+### Procedura
+1. Variabili d'ambiente: `DATABASE_URL`, `SESSION_SECRET` (almeno 32 caratteri casuali), `APP_URL` (indirizzo pubblico https), `SMTP_URL`, `EMAIL_FROM`.
+2. `npx prisma migrate deploy` (non eseguire il seed demo: in produzione è bloccato).
+3. Prima amministratrice: `npx tsx scripts/crea-utente.ts --email … --nome "…" --ruolo ADMIN`, poi si apre il link d'invito e si sceglie la password. Lo stesso script crea le docenti (`--ruolo TEACHER`) e rigenera l'invito se una docente dimentica la password.
+4. Collaudo prima di ogni rilascio, su un database di prova:
+   ```bash
+   DATABASE_URL="file:./collaudo.db" npx prisma migrate deploy && DATABASE_URL="file:./collaudo.db" npx tsx prisma/seed.ts
+   DATABASE_URL="file:./collaudo.db" npx tsx scripts/collaudo/fixtures.ts
+   NEXT_DIST_DIR=.next-prod DATABASE_URL="file:./collaudo.db" npx next build && NEXT_DIST_DIR=.next-prod DATABASE_URL="file:./collaudo.db" npx next start -p 3100
+   BASE_URL=http://localhost:3100 DATABASE_URL="file:./collaudo.db" npx tsx scripts/collaudo/permessi.ts
+   ```
+
+### Ancora da fare / decidere
+- **Provider email e dominio mittente:** scegliere il provider SMTP e configurare SPF/DKIM sul dominio.
+- **Hosting e database:** SQLite va bene solo su un server singolo con disco persistente e backup giornalieri; altrimenti Postgres. Il limite dei tentativi di login è in memoria: con più istanze serve un archivio condiviso.
+- **Informativa privacy:** testo e pagina pubblica da collegare alle caselle di consenso (preventivo e anagrafica), da validare con il DPO, così come la base giuridica per i dati fisici (§13).
+- **Gestione utenti in app:** oggi docenti e amministratrici si creano dallo script; manca una pagina "Utenti" per l'amministratrice.
+- **Diritti GDPR:** esportazione e cancellazione dei dati di un'allieva non sono ancora disponibili in app.
+- **Permessi sul catalogo:** oggi ogni docente può modificare corsi, listino e modelli di questionario di tutta la scuola. Decidere se riservarlo all'amministratrice.
 - Branding definitivo, firma e testo dell'attestato (§16).

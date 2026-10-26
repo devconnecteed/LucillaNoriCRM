@@ -4,6 +4,7 @@ import { getStudentForStaff, requireStaff, editionScope, type CurrentUser } from
 import { effectiveStatus } from "@/lib/guards";
 import { loadProgress } from "@/lib/progress";
 import { dayAndDate } from "@/lib/dates";
+import { fmtScore } from "@/lib/format";
 import { ASSIGNMENT_STATUS_LABELS, CONSENT_LABELS, ENROLLMENT_STATUS_LABELS } from "@/lib/constants";
 import { QUOTE_STATUS_LABELS, euro, quoteEffectiveStatus } from "@/lib/quote";
 import { addTeacherNote, inviteStudent, recordConsent, revokeAccess, updateStudent } from "@/server/students";
@@ -158,7 +159,7 @@ export default async function StudentDossier({ params, searchParams }: { params:
                   <Td className="text-muted">{fmtDate(a.createdAt)}{a.dueAt && <span className="block text-xs">entro {fmtDate(a.dueAt)}</span>}</Td>
                   <Td><Badge tone={statusTone(st)}>{ASSIGNMENT_STATUS_LABELS[st]}</Badge></Td>
                   <Td>
-                    {r?.maxScore != null && r.status === "SUBMITTED" && <span className="mr-2 text-[13px]">{r.manualScore ?? r.autoScore}/{r.maxScore}</span>}
+                    {r?.maxScore != null && r.status === "SUBMITTED" && <span className="mr-2 text-[13px]">{fmtScore(r.manualScore ?? r.autoScore, r.maxScore)}</span>}
                     {r?.published ? <Badge tone="pink">Pubblicato</Badge> : r?.status === "SUBMITTED" ? <Badge tone="amber">Da rivedere</Badge> : null}
                   </Td>
                   <Td className="text-right">

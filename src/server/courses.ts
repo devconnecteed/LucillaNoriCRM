@@ -211,6 +211,8 @@ export async function saveAttendance(lessonId: string, form: FormData) {
   const user = await requireStaff();
   const lesson = await db.lesson.findUniqueOrThrow({ where: { id: lessonId }, include: { edition: { include: { enrollments: true } } } });
   await getEditionForStaff(user, lesson.editionId);
+  // Le presenze valgono per l'attestato: si registrano solo per lezioni con data già iniziata
+  if (!lesson.date || lesson.date > new Date()) return;
   for (const en of lesson.edition.enrollments) {
     const present = form.get(`present.${en.id}`) === "on";
     await db.attendance.upsert({

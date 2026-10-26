@@ -73,7 +73,14 @@ export default async function EditionPage({ params }: { params: Promise<{ id: st
                         </div>
                       </form>
                     </div>
-                    {edition.enrollments.length > 0 && (
+                    {edition.enrollments.length > 0 && !past && (
+                      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#f2edeb] pt-3 text-xs text-muted">
+                        <span className="mr-auto">{l.date ? `Presenze registrabili dal ${l.date.toLocaleDateString("it-IT")}` : "Fissa la data per registrare le presenze"}</span>
+                        <AddToCalendar compact links={lessonCalendarLinks({ ...l, edition })} />
+                        <ButtonLink size="sm" variant="soft" href={`/docente/valutazioni/assegna?edizione=${id}&lezione=${l.id}`}>Valuta lezione</ButtonLink>
+                      </div>
+                    )}
+                    {edition.enrollments.length > 0 && past && (
                       <form key={l.attendances.map((a) => `${a.enrollmentId}${a.present}`).join()} action={saveAttendance.bind(null, l.id)}
                         className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[#f2edeb] pt-3">
                         <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#948a86]">Presenti</span>

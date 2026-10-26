@@ -6,6 +6,7 @@ import { loadProgress } from "@/lib/progress";
 import { relativeDay, shortName } from "@/lib/dates";
 import { parseContent } from "@/lib/questionnaire/schema";
 import { allItems } from "@/lib/questionnaire/logic";
+import { fmtScore } from "@/lib/format";
 import { ButtonLink, Card, Empty, FilterChips, Initials, PageHeader, PanelTitle, Stat, Badge } from "@/components/ui";
 
 export const metadata = { title: "Valutazioni" };
@@ -54,7 +55,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
 
   const describe = (r: (typeof responses)[number]) => {
     const t = r.assignment.version.template;
-    if (r.maxScore) return `Risposte corrette ${r.manualScore ?? r.autoScore}/${r.maxScore}`;
+    if (r.maxScore) return `Punteggio ${fmtScore(r.manualScore ?? r.autoScore, r.maxScore)}`;
     const items = allItems(parseContent(r.assignment.version.content)).filter((i) => i.type !== "info");
     if (t.audience === "TEACHER") return `Valutazione docente · ${items.length} elementi`;
     return `Autovalutazione · ${Object.keys(r.answers as object).length} risposte`;

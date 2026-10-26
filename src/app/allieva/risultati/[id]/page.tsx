@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { parseContent } from "@/lib/questionnaire/schema";
 import type { Answers } from "@/lib/questionnaire/types";
+import { fmtScore } from "@/lib/format";
 import { AnswerDisplay, CorrectnessHint } from "@/components/questionnaire/answer-display";
 import { ButtonLink, Card, fmtDate } from "@/components/ui";
 
@@ -31,7 +32,7 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
       {r.maxScore && score !== null && (
         <Card className="text-center">
           <div className="text-xs uppercase tracking-wide text-muted">Punteggio</div>
-          <div className="font-serif text-4xl text-wine">{score}/{r.maxScore}</div>
+          <div className="font-serif text-4xl text-wine">{fmtScore(score, r.maxScore)}</div>
         </Card>
       )}
       {r.teacherFeedback && (
