@@ -1,4 +1,5 @@
-// Seed di sviluppo: utenti di prova, tipologie corso, libreria modelli e un percorso demo FITTIZIO.
+// Seed: tipologie corso e libreria modelli (catalogo), più utenti di prova e un percorso demo FITTIZIO.
+// In produzione carica solo il catalogo, e solo se il database è vuoto: nessun utente demo.
 // Non inserire mai qui dati reali di allieve (spec §13).
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -18,20 +19,21 @@ const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "LnDemo2026!";
 
 async function main() {
   // Gli utenti demo hanno una password nota: mai in produzione (usare scripts/crea-utente.ts)
-  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "1")
-    throw new Error("Seed demo bloccato in produzione. Per creare utenti reali: npx tsx scripts/crea-utente.ts");
-  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+  const demo = process.env.NODE_ENV !== "production" || process.env.ALLOW_DEMO_SEED === "1";
+  if (!demo && (await db.courseType.count()) > 0) {
+    console.log("Catalogo già presente: seed saltato.");
+    return;
+  }
+  const catalog = await seedCatalog();
+  if (!demo) {
+    console.log("Catalogo caricato (tipologie corso e libreria modelli). Utenti reali: npx tsx scripts/crea-utente.ts");
+    return;
+  }
+  await seedDemo(catalog);
+}
 
-  const admin = await db.user.upsert({
-    where: { email: "admin@ln.local" },
-    update: {},
-    create: { email: "admin@ln.local", name: "Amministratore", role: "ADMIN", passwordHash },
-  });
-  const teacher = await db.user.upsert({
-    where: { email: "docente@ln.local" },
-    update: {},
-    create: { email: "docente@ln.local", name: "Docente LN", role: "TEACHER", passwordHash },
-  });
+/** Tipologie corso e libreria modelli dagli allegati: servono anche in produzione. */
+async function seedCatalog() {
 
   const courseDefs = [
     { slug: "stile", title: "Stile e Portamento", category: "Portamento", durationLessons: 4, durationHours: 4, mode: "BOTH",
@@ -59,11 +61,26 @@ async function main() {
       await db.templateVersion.create({
         data: {
           templateId: tpl.id, version: i + 1, content: contentSchema.parse(content),
-          status: "PUBLISHED", publishedAt: new Date(), authorId: admin.id,
+          status: "PUBLISHED", publishedAt: new Date(),
         },
       });
     }
   }
+  return courses;
+}
+
+async function seedDemo(courses: Record<string, string>) {
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
+  await db.user.upsert({
+    where: { email: "admin@ln.local" },
+    update: {},
+    create: { email: "admin@ln.local", name: "Amministratore", role: "ADMIN", passwordHash },
+  });
+  const teacher = await db.user.upsert({
+    where: { email: "docente@ln.local" },
+    update: {},
+    create: { email: "docente@ln.local", name: "Docente LN", role: "TEACHER", passwordHash },
+  });
 
   // Percorso demo fittizio
   const demoEmail = "allieva.demo@ln.local";

@@ -72,9 +72,19 @@ L'interfaccia segue il pacchetto `../LN_Studio_Pacchetto_UIUX` (tavole e prototi
 - Login: massimo 5 tentativi falliti per email e 20 per IP ogni 15 minuti; i tentativi falliti finiscono nel registro operazioni.
 - Email: invio reale via SMTP con 3 tentativi e allegati (inviti calendario `.ics`). Senza `SMTP_URL`, in produzione le email non vengono segnate come inviate e la docente vede un avviso.
 
-### Procedura
+### Pubblicazione su Dokploy
+Il `Dockerfile` crea l'immagine; all'avvio `docker-entrypoint.sh` applica le migrazioni, carica il catalogo (tipologie corso e libreria modelli) se il database è vuoto e avvia Next sulla porta 3000. In produzione il seed **non** crea utenti demo.
+
+1. Su Dokploy: nuova *Application*, sorgente il repository git di `piattaforma`, Build Type **Dockerfile**.
+2. **Environment:** `SESSION_SECRET` (almeno 32 caratteri casuali, es. `openssl rand -hex 32`), `APP_URL` (es. `https://gestionale.dominio.it`), `SMTP_URL`, `EMAIL_FROM`. `DATABASE_URL` è già impostata nell'immagine (`file:/app/data/ln.db`).
+3. **Mounts:** volume persistente con mount path `/app/data` (contiene il database SQLite). Senza volume i dati si perdono a ogni deploy.
+4. **Domains:** dominio con HTTPS attivo, container port `3000`.
+5. Dopo il primo deploy, dal terminale del container in Dokploy: `npx tsx scripts/crea-utente.ts --email … --nome "…" --ruolo ADMIN` e aprire il link d'invito stampato.
+6. Backup: pianificare la copia del volume `/app/data`. Una sola istanza: il limite dei tentativi di login è in memoria e SQLite non regge più repliche.
+
+### Procedura (server senza Docker)
 1. Variabili d'ambiente: `DATABASE_URL`, `SESSION_SECRET` (almeno 32 caratteri casuali), `APP_URL` (indirizzo pubblico https), `SMTP_URL`, `EMAIL_FROM`.
-2. `npx prisma migrate deploy` (non eseguire il seed demo: in produzione è bloccato).
+2. `npx prisma migrate deploy && npx prisma db seed` (in produzione il seed carica solo il catalogo, nessun utente demo).
 3. Prima amministratrice: `npx tsx scripts/crea-utente.ts --email … --nome "…" --ruolo ADMIN`, poi si apre il link d'invito e si sceglie la password. Lo stesso script crea le docenti (`--ruolo TEACHER`) e rigenera l'invito se una docente dimentica la password.
 4. Collaudo prima di ogni rilascio, su un database di prova:
    ```bash

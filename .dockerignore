@@ -1,0 +1,12 @@
+node_modules
+.next
+.next-prod
+.git
+.env
+.env.*
+!.env.example
+prisma/*.db
+prisma/*.db-journal
+*.tsbuildinfo
+.DS_Store
+coverage
